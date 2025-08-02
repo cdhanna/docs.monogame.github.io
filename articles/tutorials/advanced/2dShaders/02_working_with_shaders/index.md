@@ -1,5 +1,5 @@
 
-In order to succeed writing shaders, it is important to have a workflow that facilitates iteration and speed. In this chapter, we are going to set up a _hot-reload_ system for our shaders. Our goal is to be able to edit shaders programs in real time, and see the effect update dynamically in the game without needing to restart the game. The _hot-reload_ system can be split into a few parts,
+In order to succeed writing shaders, it is important to have a workflow that facilitates iteration and speed. In this chapter, we are going to set up a _hot-reload_ system for our shaders. Our goal is to be able to edit shaders programs in real time, and see the `Effect` update dynamically in the game without needing to restart the game. The _hot-reload_ system can be split into a few parts,
 1. recompiling the shader when we edit it
 2. reloading the shader into the game
 
@@ -346,7 +346,113 @@ This video shows the effect changing.
 
 ## Final Touches
 
-- Owner
-- FileLock
-- Out Parmaeter
-- 
+The _hot reload_ system is almost done. There are a few quality of life features to finish up.
+
+### File Locking
+There is an edge case bug in the `TryRefresh()` function that checks if the `.xnb` file is more recent than the in-memory asset. It is possible that the MonoGame Content Builder may be _actively_ writing the `.xnb` file when the function runs. The game will fail to read the file while it is being written. The solution to this problem is to simply wait and try loading the `.xnb` file the next frame. The trick is that C# does not have a standard way to check if a file is currently locked. The best way to check is to simply try and open the file, and if an `Exception` is thrown, assume the file is not readable. 
+
+Add this function to the `ContentManagerExtensions` class.
+```csharp
+private static bool IsFileLocked(string path)
+{
+	try
+	{
+		using FileStream _ = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+		// File is not locked
+		return false;
+	}
+	catch (IOException)
+	{
+		// File is locked or inaccessible
+		return true;
+	}
+}
+```
+
+And then modify the `TryRefresh` function by returning early if the file is locked. 
+```csharp
+if (IsFileLocked(path)) return false; // wait for the file to not be locked.
+```
+
+### Access the old Asset on reload
+Anytime a new asset is loaded, the old asset is unloaded from the `ContentManager`. However, it will be helpful to be able to access in-memory data about the old asset version. For shaders, there is metadata and runtime configuration that should be applied to the new version. This will be more relevant in the next chapter. For now, modify the `TryRefresh` function to contain `out` parameter of the old asset. Change the method signature to the following,
+
+```csharp
+public static bool TryRefresh<T>(this ContentManager manager, WatchedAsset<T> watchedAsset, out T oldAsset)
+```
+
+And before updating the `watchedAsset.Asset`, set the `oldAsset` as the previous in-memory asset.
+```csharp
+oldAsset = watchedAsset.Asset;  
+watchedAsset.Asset = manager.Load<T>(watchedAsset.AssetName);
+```
+
+Don't forget that the place where the `grayscaleEffect` calls the `TryRefresh()` function will need to include a no-op out variable.
+```csharp
+Content.TryRefresh(_grayscaleEffect, out _);
+```
+### Refresh Convenience Function 
+Finally, we need to address a subtle usability bug in the existing code. The `TryRefresh` function may `Unload` an asset if a new version is loaded. However, it isn't obvious that the `ContentManager` instance doing the `Unload` operation is the same `ContentManager` instance that loaded the original asset in the first place. To solve this, add a `ContentManager` property to the `WatchedAsset<T>` class so that the asset itself knows which `ContentManager` is responsible for unloading old versions. 
+
+```csharp
+/// <summary>  
+/// The <see cref="ContentManager"/> instance that loaded the asset.  
+/// </summary>  
+public ContentManager Owner { get; init; }
+```
+
+Adjust the `WatchAsset` function fill in this new property,
+```csharp
+public static WatchedAsset<T> Watch<T>(this ContentManager manager, string assetName)
+{
+    var asset = manager.Load<T>(assetName);
+    return new WatchedAsset<T>
+    {
+        AssetName = assetName,
+        Asset = asset,
+        UpdatedAt = DateTimeOffset.Now,
+        Owner = manager
+    };
+}
+```
+
+Then, in the `TryRefresh` function, a small assertion can be added to validate the `ContentManager` is the same.
+```csharp
+if (manager != watchedAsset.Owner)  
+    throw new ArgumentException($"Used the wrong ContentManager to refresh {watchedAsset.AssetName}");
+```
+
+It is annoying to need use the `ContentManager` directly to call `TryRefresh` in the game loop. It would be easier to rely on the new `Owner` property, now. Add this method to the `WatchedAsset<T>` class.
+
+```csharp
+public bool TryRefresh(out T oldAsset)  
+{  
+    return Owner.TryRefresh(this, out oldAsset);  
+}
+```
+
+Finally, update the `GameScene` to use the new convenience method to refresh the `_grayscaleEffect` .
+```csharp
+_grayscaleEffect.TryRefresh(out _);
+```
+
+## Conclusion
+
+In this chapter, you accomplished the following:
+
+- You created a custom `<Target>` to re-build and copy your MonoGame content files during runtime
+- You used `dotnet watch` to re-build your content
+- You wrote a C# wrapper around `ContentManager` to reload assets when their files update
+- You updated the `_grayscaleEffect` to use the new system
+
+In the next chapter, we will continue setting up the development workflow for creating shaders in MonoGame
+
+> [!Tip]
+> Don't forget to _start_ the reload system by running `dotnet built -t:WatchContent` as you start each work session.
+## Test Your Knowledge
+
+1. During the MonoGame content pipeline workflow, assets are compiled and then copied to the project output folder.  What is responsible for performing this task?
+
+    :::question-answer
+    The *MonoGame.Content.Builder.Tasks* NuGet reference.
+    :::
