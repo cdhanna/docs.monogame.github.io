@@ -202,11 +202,103 @@ ImGui.Checkbox("##override-values", ref DebugOverride);
 Now, when you run the game, you can enable the `"Override Values"` checkbox to be able to set the `Saturation` value by hand. 
 ![Figure 4.3: Shader parameters can be written](./videos/debug-shader-ui-2.mp4)
 
+### Turning it off
+
+As the number of shaders and `Material` instances grows through out the rest of the tutorial series, it will become awkward to manage drawing all of the debug UIs manually like the `_grayscaleEffect`'s UI is being drawn. Rather, it would be good to have a single function that would draw all of the debug UIs at once. Naturally, it would not make sense to draw _every_ `Material`'s debug UI, so the `Material` class needs a setting to decide if the debug UI should be drawn or not. 
+
+We will keep track of all the `Material` instances to draw as a `static` variable inside the `Material` class itself. 
+
+```csharp
+// materials that will be drawn during the standard debug UI pass.  
+private static HashSet<Material> s_debugMaterials = new HashSet<Material>();
+```
+
+Now we can add a `boolean` property to the `Material` class that adds or removes the given instance to the `static` set. 
+```csharp
+/// <summary>
+/// Enable this variable to visualize the debugUI for the material
+/// </summary>
+public bool IsDebugVisible
+{
+	get
+	{
+		return s_debugMaterials.Contains(this);
+	}
+	set
+	{
+		if (IsDebugVisible)
+		{
+			s_debugMaterials.Remove(this);
+		}
+		else
+		{
+			s_debugMaterials.Add(this);
+		}
+	}
+}
+```
+
+To finish off the edits to the `Material` class, add a method that actually renders all of the `Material` instances in the `static` set. 
+```csharp
+[Conditional("DEBUG")]
+public static void DrawVisibleDebugUi(GameTime gameTime)
+{
+	// first, cull any materials that are not visible, or disposed. 
+	var toRemove = new List<Material>();
+	foreach (var material in s_debugMaterials)
+	{
+		if (material.Effect.IsDisposed)
+		{
+			toRemove.Add(material);
+		}
+	}
+
+	foreach (var material in toRemove)
+	{
+		s_debugMaterials.Remove(material);
+	}
+	
+	Core.ImGuiRenderer.BeforeLayout(gameTime);
+	foreach (var material in s_debugMaterials)
+	{
+		material.DrawDebug();
+	}
+	Core.ImGuiRenderer.AfterLayout();
+}
+```
+
+Now in the `Core`'s `Draw` method, we just need to call the new method. We should also delete the old code in the `GameScene` to draw the `_grayscaleEffect`'s debugUI as a one-shot. 
+```csharp
+protected override void Draw(GameTime gameTime)
+{
+	// If there is an active scene, draw it.
+	if (s_activeScene != null)
+	{
+		s_activeScene.Draw(gameTime);
+	}
+
+	Material.DrawVisibleDebugUi(gameTime);
+	
+	base.Draw(gameTime);
+}
+```
+
+Finally, in order to render the debug UI for the `_grayscaleEffect`, just enable the `IsDebugVisible` property to `true`. 
+```csharp
+// Load the grayscale effect
+_grayscaleEffect = Content.WatchMaterial("effects/grayscaleEffect");
+_grayscaleEffect.IsDebugVisible = true;
+```
+
+>[!tip]
+>If you don't want to see the debug UI for the `grayscaleEffect` anymore, just delete the line of code that sets `IsDebugVisible` to `true`. 
 ## RenderDoc
 
 //TODO 
 
 ## Conclusion
+
+
 
 In this chapter you accomplished the following:
 - learned how to include `IMGui.NET` in your MonoGame project
