@@ -56,7 +56,7 @@ public override void Draw(GameTime gameTime)
 ```
 
 
-In our case, we don't want to recompile `.cs` files, but rather `.fx` files. First, `dotnet watch` can be configured to execute any MSBuild target rather than a recompile code. The following command use the existing target provided by the `MonoGame.Content.Builder.Task`.
+In our case, we don't want to recompile `.cs` files, but rather `.fx` files. First, `dotnet watch` can be configured to execute any MSBuild target rather than a recompile code. The following command uses the existing target provided by the `MonoGame.Content.Builder.Task`.
 
 > [!Tip]
 > All arguments passed after the `--` characters are passed to the `build` command itself, not `dotnet watch`.
@@ -65,7 +65,7 @@ In our case, we don't want to recompile `.cs` files, but rather `.fx` files. Fir
 dotnet watch build -- --target:IncludeContent
 ```
 
-Now, when you change a _`.cs`_ file, all of the content files are rebuilt into `.xnb` files.
+Now, when you change a _`.fx`_ file, all of the content files are rebuilt into `.xnb` files.
 
 However, the `.xnb` files are not being copied from the `Content/bin` folder to _DungeonSlime_'s runtime folder. The `.xnb` files are only copied during the full MSBuild of the game. The `IncludeContent` target on its own doesn't have all the context it needs to know how to copy the files in the final game project. To solve this, we need to introduce a new `<Target>` that copies the final `.xnb` files into _DungeonSlime_'s runtime folder. 
 
