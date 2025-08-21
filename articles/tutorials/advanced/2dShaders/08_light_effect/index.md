@@ -579,8 +579,411 @@ public void DrawComposite(float ambient=.4f)
 
 ![Figure 8.12: A constant ambient value](./gifs/composite-light-no-vert.gif)
 
-TODO;
-- vertex shader correction
-- blending multiple lights with High Definition 
-- Normals
-- Moving lights and gameplay
+### Normal Textures
+
+The lighting is working, but it still feels a bit flat. Ultimately, the light is being applied to our flat 2d sprites uniformly, so there the sprites don't feel like they have any depth. Normal mapping is a technique designed to help make flat surfaces appear 3d by changing how much the lighting affects each pixel depending on the "Normal" of the surface at the given pixel. 
+
+Normal textures encode the _direction_ (also called the _normal_) of the surface at each pixel. The direction of the surface is a 3d vector where the `x` component lives in the `red` channel, the `y` component lives in the `green` channel, and the `z` component lives in the `blue` channel. The directions are encoded as colors, so each component can only range from `0` to `1`. The _direction_ vector components need to range from `-1` to `1`, so a color channel value of `.5` results in a `0` value for the direction vector. 
+
+Generating normal maps is an artform. Generally, you find a _normal map picker_, similar to a color wheel, and paint the directions on-top of your existing artwork. This page on [open game art](https://opengameart.org/content/pixelart-normal-map-handpainting-helper) has a free normal map wheel that shows the colors for various directions along a low-resolution sphere. 
+![Figure 8.13: A normal picker wheel](https://opengameart.org/sites/default/files/styles/medium/public/normalmaphelper.png)
+
+For this effect to work, we need an extra texture for every frame of every sprite we are drawing in the game. Given that the textures are currently coming from an atlas, the easiest thing to do will be to create a _second_ texture that shares the same layout as the first, but uses normal data instead. 
+
+For reference, here is the existing atlas texture.
+![Figure 8.14: The existing texture atlas](./images/atlas.png)
+And here is the atlast, but with normal data where the game sprites are instead. Download the [atlas-normal.png](./images/atlas-normal.png) texture and add it to the _DungeonSlime_'s content folder. Include it in the mgcb content file. 
+
+![Figure 8.15: The normal texture atlas](./images/atlas-normal.png)
+Everytime one of the game sprites is being drawn, we need to draw the corresponding normal texture information to yet another off-screen texture, called the `NormalBuffer`. Start by adding a new `RenderTarget2D` to the `DeferredRenderer` class.
+```csharp
+/// <summary>  
+/// A texture that holds the normal sprite drawins  
+/// </summary>  
+public RenderTarget2D NormalBuffer { get; set; }
+```
+
+And initialize it in the `DeferredRenderer`'s constructor,
+```csharp
+NormalBuffer = new RenderTarget2D(  
+    graphicsDevice: Core.GraphicsDevice,   
+    width: viewport.Width,  
+    height: viewport.Height,  
+    mipMap: false,  
+    preferredFormat: SurfaceFormat.Color,   
+    preferredDepthFormat: DepthFormat.None);
+```
+
+So far in the series, all of the pixel shaders have returned a _single_ `float4` with the `COLOR` semantic. MonoGame supports _Multiple Render Targets_ by having a shader return a `struct` with _multiple_ fields each with a unique `COLOR` semantic. Add the following `struct` to the `gameEffect.fx` file,
+```hlsl
+struct PixelShaderOutput {  
+    float4 color: COLOR0;  
+    float4 normal: COLOR1;  
+};
+```
+
+At the moment, the `gameEffect.fx` is just registering the `ColorSwapPS` function as the pixel function, but we will need to extend the logic to support the normal values. Create a new function in the file that will act as the new pixel shader function.
+```hlsl
+PixelShaderOutput MainPS(VertexShaderOutput input)  
+{  
+    PixelShaderOutput output;  
+    output.color = ColorSwapPS(input);  
+    output.normal = float4(1, 0, 0, 1); // for now, hard-code the normal to be red.
+    return output;  
+}
+```
+
+And don't forget to update the `technique` to reference the new `MainPS` function,
+```hlsl
+technique SpriteDrawing  
+{  
+   pass P0  
+   {  
+      VertexShader = compile VS_SHADERMODEL MainVS();  
+      PixelShader = compile PS_SHADERMODEL MainPS();  
+   }  
+};
+```
+
+In C#, when the `GraphcisDevice.SetRenderTarget()` function is called, it sets the texture that the `COLOR0` semantic will be sent to. However, there is an overload called `SetRenderTargets()` that accepts _multiple_ `RenderTarget2D`s, and each additional texture will be assigned to the next `COLOR` semantic. Rewrite the `StartColorPhase()` function in the `DeferredRenderer` as follows,
+```csharp
+public void StartColorPhase()
+{
+	// all future draw calls will be drawn to the color buffer and normal buffer
+	Core.GraphicsDevice.SetRenderTargets(new RenderTargetBinding[]
+	{
+		// gets the results from shader semantic COLOR0
+		new RenderTargetBinding(ColorBuffer),
+		
+		// gets the results from shader semantic COLOR1
+		new RenderTargetBinding(NormalBuffer)
+	});
+	Core.GraphicsDevice.Clear(Color.Transparent);
+}
+```
+
+To visualize the `NormalBuffer`, we will switch back to the `DebugDraw()` method. The `NormalBuffer` will be rendered in the lower-left corner of the screen. 
+```csharp
+// the debug view for the normal buffer lives in the top-right.  
+var normalBorderRect = new Rectangle(  
+    x: viewportBounds.X,   
+    y: viewportBounds.Height / 2,   
+    width: viewportBounds.Width / 2,  
+    height: viewportBounds.Height / 2);  
+  
+// shrink the normal rect by 8 pixels  
+var normalRect = normalBorderRect;  
+normalRect.Inflate(-8, -8);
+
+// ...
+
+  
+// draw a debug border  
+Core.SpriteBatch.Draw(Core.Pixel, normalBorderRect, Color.MintCream);  
+  
+// draw the light buffer  
+Core.SpriteBatch.Draw(NormalBuffer, normalRect, Color.White);
+```
+
+And don't forget to call the `DebugDraw()` method from the `GameScene`'s `Draw()` method. Then you will see a totally `red` `NormalBuffer`, because the shader is hard coding the value to `float4(1,0,0,1)`. 
+![Figure 8.16: A blank normal buffer](./images/normal-buffer-red.png)
+
+To start rendering the normal values themselves, we need to load the normal texture into the `GameScene` and pass it along to the `gameEffect.fx` effect. First, create a class member for the new `Texture2D`.
+```csharp
+// The normal texture atlas  
+private Texture2D _normalAtlas;
+```
+
+Then load the texture in the `LoadContent()` method,
+```csharp
+// Load the normal maps  
+_normalAtlas = Content.Load<Texture2D>("images/atlas-normal");
+```
+
+And finally, pass it to the `_gameEffect` material as a parameter, 
+```csharp
+_gameMaterial.SetParameter("NormalMap", _normalAtlas);
+```
+
+The shader itself needs to expose a `Texture2D` and `Sampler` state for the new normal texture.
+```hlsl
+Texture2D NormalMap;  
+sampler2D NormalMapSampler = sampler_state  
+{  
+   Texture = <NormalMap>;  
+};
+```
+
+And then finally the `MainPS` shader function needs to read the `NormalMap` data for the current pixel.
+```hlsl
+PixelShaderOutput MainPS(VertexShaderOutput input)  
+{  
+    PixelShaderOutput output;  
+    output.color = ColorSwapPS(input);  
+      
+    // read the normal data from the NormalMap  
+    float4 normal = tex2D(NormalMapSampler,input.TextureCoordinates);  
+    output.normal = normal;  
+      
+    return output;  
+}
+```
+
+Now the `NormalBuffer` is being populated with the normal data for each sprite.
+![Figure 8.17: The normal map](./images/normal-buffer.png)
+
+### Combing Normals with Lights
+
+When each individual light is drawn into the `LightBuffer`, it needs to use the `NormalBuffer` information to modify the amount of light being drawn at each pixel. To set up, the `PointLightMaterial` is going to need access to the `NormalBuffer`. Start by modifying the `PointLight.Draw()` function to take in the `NormalMap` as a `Texture2D`, and set it as a parameter on the `PointLightMaterial`. 
+```csharp
+public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, Texture2D normalBuffer)  
+{  
+    Core.PointLightMaterial.SetParameter("NormalBuffer", normalBuffer);
+    // ...
+```
+
+And then to pass the `NormalBuffer`, modify the `GameScene`'s `Draw()` method to pass the buffer.
+```csharp
+// start rendering the lights  
+_deferredRenderer.StartLightPhase();  
+PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
+```
+
+The `pointLightEffect.fx` shader needs to accept the `NormalBuffer` as a new `Texture2D` and `Sampler`. 
+```hlsl
+Texture2D NormalBuffer;  
+sampler2D NormalBufferSampler = sampler_state  
+{  
+   Texture = <NormalBuffer>;  
+};
+```
+
+The challenge is to find the normal value of the pixel that the light is currently shading in the pixel shader. However, the shader's `uv` coordinate space is relative to the light itself, not the screen. The `NormalBuffer` is relative to the entire screen, not the light. We need to be able to convert the light's `uv` coordinate space into screen space. This can be done in a custom vertex shader. The vertex shader's job is to convert the world space into clip space, which in a 2d game like _Dungeon Slime_, essentially _is_ screen space. The screen coordinates can be calculated in the vertex function, and then passed along to the pixel shader by extending the outputs of the vertex shader struct. 
+
+In order to override the vertex shader function, we will need to repeat the `MatrixTransform` work from the previous chapter. However, it would better to _re-use_ the work from the previous chapter so that the lights also tilt and respond to the `MatrixTransform` that the rest of the game world uses. 
+
+Add a reference in the `3dEffect.fxh` file in the `pointLightEffect.fx` shader.
+```hlsl
+#include "3dEffect.fxh"
+```
+
+However, we need to _extend_ the vertex function and add the extra field. 
+Create a new struct in the `pointLightEffect.fx` file,
+```hlsl
+struct LightVertexShaderOutput  
+{  
+   float4 Position : SV_POSITION;  
+   float4 Color : COLOR0;  
+   float2 TextureCoordinates : TEXCOORD0;  
+   float2 ScreenCoordinates : TEXCOORD1;  
+};
+```
+
+Then, create a new vertex function that uses the new `LightVertexShaderOutput`. This function will call to the existing `MainVS` function that does the 3d effect, and add the screen coordinates afterwards. 
+```hlsl
+LightVertexShaderOutput LightVS(VertexShaderInput input)
+{
+	LightVertexShaderOutput output;
+
+	VertexShaderOutput mainVsOutput = MainVS(input);
+
+	// forward along the existing values from the MainVS's output
+	output.Position = mainVsOutput.Position;
+	output.Color = mainVsOutput.Color;
+	output.TextureCoordinates = mainVsOutput.TextureCoordinates;
+	
+	// normalize from -1,1 to 0,1
+	output.ScreenCoordinates = .5 * (float2(output.Position.xy) + 1);
+	
+	// invert the y coordinate, because MonoGame flips it. 
+	output.ScreenCoordinates.y = 1 - output.ScreenCoordinates.y;
+    
+	return output;
+}
+```
+
+Make sure to update the `technique` to use the new vertex function.
+```hlsl
+technique SpriteDrawing  
+{  
+   pass P0  
+   {  
+      VertexShader = compile VS_SHADERMODEL LightVS();  
+      PixelShader = compile PS_SHADERMODEL MainPS();  
+   }  
+};
+```
+
+In the pixel function, to visualize the screen coordinates, we will short-circuit the existing light code and just render out the screen coordinates. First, modify the input of the pixel function to be the `LightVertexShaderOutput` struct that was returned from the `LightVS` vertex function.
+```hlsl
+float4 MainPS(LightVertexShaderOutput input) : COLOR
+```
+
+And make the function immediately return the screen coordinates in the red and green channel.
+```hlsl
+return float4(input.ScreenCoordinates.xy, 0, 1);
+```
+
+Be careful, if you run the game now, it won't look right. We need to make sure to send the `MatrixTransform` parameter from C# as well.
+In the `GameScene`'s `Update()` method, make sure to pass the `MatrixTransform` to _both_ the `_gameMaterial` _and_ the `Core.PointLightMaterial`. The `ScreenSize` parameter also needs to be sent.
+```csharp
+var matrixTransform = _camera.CalculateMatrixTransform();  
+_gameMaterial.SetParameter("MatrixTransform", matrixTransform);  
+Core.PointLightMaterial.SetParameter("MatrixTransform", matrixTransform);
+Core.PointLightMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+```
+
+![8.18: The point light can access screen space](./images/light-screen.png)
+
+Now, the `pointLightEffect` can use the screen space coordinates to sample the `NormalBuffer` values.
+To build intuition, start by just returning the values from the `NormalBuffer`. Start by reading those values, and then return immediately.
+```hlsl
+float4 MainPS(LightVertexShaderOutput input) : COLOR  
+{  
+    float4 normal = tex2D(NormalBufferSampler,input.ScreenCoordinates);  
+    return normal;
+}
+```
+
+Strangely, this will return a `white` box, instead of the normal data as expected.
+![Figure 8.19: A white box instead of the normal data?](./images/light-broken.png)
+
+This happens because of a misunderstanding between the shader compiler and `SpriteBatch`. _Most_ of the time when `SpriteBatch` is being used, there is a single `Texture` and `Sampler` being used to draw a sprite to the screen. The `SpriteBatch`'s draw function passes the given `Texture2D` to the shader by setting it in the `GraphicsDevice.Textures` array [directly](https://github.com/MonoGame/MonoGame/blob/develop/MonoGame.Framework/Graphics/SpriteBatcher.cs#L212). The texture is not being passed _by name_, it is being passed by _index_. In the lighting case, the `SpriteBatch` is being drawn with the `Core.Pixel` texture (a white 1x1 image we generated in the earlier chapters). 
+
+However, the shader compiler will aggressively optimize away data that isn't being used in the shader. The current `pointLightEffect.fx` doesn't _use_ the default texture or sampler that `SpriteBatch` expects by default. The default texture is _removed_ from the shader during compilation, because it isn't used anywhere and has no effect. The only texture that is left is the `NormalBuffer`, which now becomes the first indexable texture. 
+
+Despite passing the `NormalBuffer` texture to the named `NormalTexture` `Texture2D` parameter in the shader before calling `SpriteBatch.Draw()`, the `SpriteBatch` code itself then overwrites whatever is in texture slot `0` with the texture passed to the `Draw()` call, the white pixel. 
+
+There are two workarounds. If performance is not _critical_, you could add back in a throw-away read from the main `SpriteTextureSampler` , and use the resulting color _somehow_ in the computation for the final result of the shader. However, this is useless work, and will likely confuse anyone who looks at the shader in the future. The other workaround is to pass the `NormalBuffer` to the `Draw()` function directly, and not bother sending it as a shader parameter at all. 
+
+Change the `PointLight.Draw()` method to pass the `normalBuffer` to the `SpriteBatch.Draw()` method _instead_ of passing it in as a parameter to the `PointLightMaterial`. Here is the new `PointLight.Draw()` method,
+```csharp
+public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, Texture2D normalBuffer)
+{
+	spriteBatch.Begin(
+		effect: Core.PointLightMaterial.Effect,
+		blendState: BlendState.Additive
+		);
+	
+	foreach (var light in pointLights)
+	{
+		var diameter = light.Radius * 2;
+		var rect = new Rectangle((int)(light.Position.X - light.Radius), (int)(light.Position.Y - light.Radius), diameter, diameter);
+		spriteBatch.Draw(normalBuffer, rect, light.Color);
+	}
+	
+	spriteBatch.End();
+}
+```
+
+And now the normal map is being rendered where the light exists.
+![Figure 8.20: The light shows the normal map entirely](./images/light-normal.png)
+
+Now it is time to _use_ the normal data in conjunction with the light direction to decide how much light each pixel should receive. Add this shader code to the pixel function.
+```hlsl
+float4 normal = tex2D(NormalBufferSampler,input.ScreenCoordinates);  
+  
+// convert from [0,1] to [-1,1]  
+float3 normalDir = (normal.xyz-.5)*2;  
+  
+// find the direction the light is travelling at the current pixel  
+float3 lightDir = float3( normalize(input.TextureCoordinates - .5), 1);  
+  
+// how much is the normal direction pointing towards the light direction?  
+float lightAmount = saturate(dot(normalDir, lightDir));
+```
+
+And then make the final color use the `lightAmount`.
+```hlsl
+color.a *= falloff * lightAmount;
+```
+
+![Figure 8.21: The light with the normal](./images/light-with-normal.png)
+
+To drive the effect for a moment, this gif shows the normal effect being blended in. Notice how the wings on the bat shade differently based on their position towards the light as the normal effect is brought in. 
+![Figure 8.22: The lighting on the bat with normals](./gifs/normals.gif)
+
+### Gameplay
+
+Now that we have lights rendering in the game, it is time to hook a few more up in the game. There should be a light positioned next to each torch along the upper wall, and maybe a few lights that wonder around the level. 
+
+Create a function in the `GameScene` that will initialize all of the lights. Feel free to add more.
+```csharp
+private void InitializeLights()
+{
+	// torch 1
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(260, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 2
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(520, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 3
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(740, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 4
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(1000, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	
+	// random lights
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(Random.Shared.Next(50, 400),400),
+		Color = Color.MonoGameOrange,
+		Radius = 500
+	});
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(Random.Shared.Next(650, 1200),300),
+		Color = Color.MonoGameOrange,
+		Radius = 500
+	});
+}
+
+```
+
+Given that the lights have a dynamic nature to them with the normal maps, it would be good to move some of them around. 
+
+Add this function to the `GameScene`, 
+```csharp
+private void MoveLightsAround(GameTime gameTime)
+{
+	var t = (float)gameTime.TotalGameTime.TotalSeconds * .25f;
+	var bounds = Core.GraphicsDevice.Viewport.Bounds;
+	bounds.Inflate(-100, -100);
+
+	var halfWidth = bounds.Width / 2;
+	var halfHeight = bounds.Height / 2;
+	var center = new Vector2(halfWidth, halfHeight);
+	_lights[^1].Position = center + new Vector2(halfWidth * MathF.Cos(t), .7f * halfHeight * MathF.Sin(t * 1.1f));
+	_lights[^2].Position = center + new Vector2(halfWidth * MathF.Cos(t + MathHelper.Pi), halfHeight * MathF.Sin(t - MathHelper.Pi));
+}
+```
+
+And call it from the `Update()` method,
+```csharp
+// Move some lights around for artistic effect  
+MoveLightsAround(gameTime);
+```
+
+And now when the game runs, it looks like this.
+
+![Figure 8.23: The final results](./gifs/final.gif)
+
+## Conclusion
+TODO
