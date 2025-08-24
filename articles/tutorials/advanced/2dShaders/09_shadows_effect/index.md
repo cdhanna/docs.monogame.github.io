@@ -1,0 +1,485 @@
+In the previous chapter, you learned how to create a 2d lighting system. In this chapter, we will extend the system by adding dynamic shadows to the effect. 
+## 2D Shadows
+
+Take a look at the current lighting in _Dungeon Slime_. In this screenshot, there is a single light source. The bat and the slime don't cast shadows, and without these shadows, it is hard to visually identify where the light's position is. 
+
+![Figure 9.1: A light with no shadows](./images/starting.png)
+
+If the slime was casting a shadow, then the position of the light would be a lot easier to decipher just from looking at the image. Shadows help ground the objects in the scene. Just to visualize it, this image is a duplicate of the above, but with a pink debug shadow drawn on top to illustrate the desired effect. 
+
+![9.2: A hand drawn shadow](./images/dbg_light_shadow.png)
+
+The pink section is called the _Shadow hull_. We can split up the entire effect into two distinct stages. 
+1. We need a way to calculate and render the shadow hulls from all objects that we want to cast shadows (such as bats and slime segments),
+2. We need a way to _use_ the shadow hull to actually mask the lighting from the previous chapter. 
+
+
+Step 2 is actually a lot easier to understand than step 1. Imagine that the shadow hulls were drawn to an off-screen texture, like the one in the image below. The black sections represent shadow hulls, and the white sections are places where no shadow hulls exist. This resource is called the `ShadowBuffer`. 
+
+![Figure 9.3: A shadow map](./images/dbg_shadow_map.png)
+
+We would need to have a `ShadowBuffer` for each light source, but if we did, then when the light was being rendered, we could pass in the `ShadowBuffer` as an additional texture resource to the `_pointLightEffect.fx`, and use the pixel value of the `ShadowBuffer` to mask the light source. 
+
+In the sequence below, the left image is the just the `LightBuffer`. The middle image is the `ShadowBuffer`, and the right image is the product of the two images. Any pixel in the `ShadowBuffer` that was `white` means the final image uses the color from the `LightBuffer`, and any `black` pixel from the `ShaodwBuffer` becomes black in the final image as well. The multiplication of the `LightBuffer` and `ShadowBuffer` complete the shadow effect.
+
+| The `LightBuffer`                                         | The `ShadowBuffer`                                       | The multiplication of the two images                                     |
+| --------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------ |
+| ![Figure 9.4: a light buffer](./images/dbg_light_map.png) | ![Figure 9.3: A shadow map](./images/dbg_shadow_map.png) | ![Figure 9.5: The multiplication](./images/dbg_light_map_multiplied.png) |
+
+The mystery to unpack is step 1, how to render the `ShadowBuffer` in the first place. 
+
+## Rendering the Shadow Buffer
+
+To build some intuition, we will start by considering a shadow caster that is a single line segment. If we can generate a shadow for a single line segment, then we could compose multiple line segments to replicate the shape of the slime sprite. In the image blow, there is a single light source at position `L`, and a line segment between points `A`, and `B`. 
+
+![Figure 9.6: A diagram of a simple light and line segment](./images/light_math.png)
+
+The shape we need to draw is the non-regular quadrilateral defined by `A`, `a`, `b`, and `B`. It is shaded in pink. These points are in world space. Given that we know where the line segment is, we know where `A` and `B` are, but we don't _yet_ know `a` and `b`'s location.
+
+> [!note] `A` and `a` naming convention
+> The `A` and `a` points lay on the same ray from the light starting at `L`. The uppercase `A` denotes that the position is _first_ from the light's point of view. The same pattern holds for `B` and `b`. 
+
+However, the `SpriteBatch` usually only renders rectangular shapes. Naively, it appears `SpriteBatch` cannot help us draw these sorts of shapes, but fortunately, since the shadow hull has exactly _4_ vertices, and `SpriteBatch` draws quads with exactly _4_ vertices, we can use a custom vertex function. 
+
+This diagram shows an abstract pixel being drawn at some position `P`. The corners of the pixel may be defined as `G`, `S`, `D`, and `F`. 
+![Figure 9.7: A diagram showing a pixel](./images/pixel_math.png)
+
+Our goal is define a function that transforms the positions `S`, `D`, `F`, and `G` _into_ the positions, `A`, `a`, `b`, and `B`. The table below shows the desired mapping.
+
+| Pixel Point | Shadow Hull Point |
+| ----------- | ----------------- |
+| S           | A                 |
+| D           | a                 |
+| F           | b                 |
+| G           | B                 |
+
+
+Each vertex (`S`, `D`, `F`, and `G`) have additional metadata beyond positional data. The diagram includes `P`, but that point is the point specified to _`SpriteBatch`_, and it isn't available in the shader function. The vertex shader runs once for each vertex, but completely in isolation of the other vertices. Remember, the input for the standard vertex shader is as follows,
+
+```hlsl
+struct VertexShaderInput
+{
+    float4 Position	: POSITION0;
+    float4 Color	: COLOR0;
+    float2 TexCoord	: TEXCOORD0;
+};
+```
+
+The `TexCoord` data is a two dimensional value that tells the pixel shader how to map an image onto the rectangle. The values for `TexCoord` can be set by the `SpriteBatch`'s `sourceRectangle` field in the `Draw()`, but if left unset, they default to `0` through `1` values. The default mapping is in the table below,
+
+| Vertex | TexCoord.x | TexCoord.y |
+| ------ | ---------- | ---------- |
+| S      | 0          | 0          |
+| D      | 1          | 0          |
+| F      | 1          | 1          |
+| G      | 0          | 1          |
+
+If we use the defaults, then we could use these values to compute a unique id for each vertex in the pixel. The function, `x + y*2` will produce a unique hash of the inputs for the domain we care about. The following table shows the unique values. 
+
+| Vertex | TexCoord.x | TexCoord.y | Unique Id |
+| ------ | ---------- | ---------- | --------- |
+| S      | 0          | 0          | 0         |
+| D      | 1          | 0          | 1         |
+| F      | 1          | 1          | 3         |
+| G      | 0          | 1          | 2         |
+The unique value is important, because it gives the vertex shader the ability to know _which_ vertex is being processed, rather than _any_ arbitrary vertex. For example, now the shader can know if it is processing `S`, or `D` based on if the unique id is `0` and `1`. The math for mapping `S` --> `A` may be quite different than the math for mapping `D` --> `a`. 
+
+Additionally, the default `TexCoord` values allow the vertex shader to take any arbitrary position,  (`S`, `D`, `F`, and `G`) , and produce the point `P` where the `SpriteBatch` is drawing the sprite in world space. Recall from the previous chapter that MonoGame uses the screen size as a basis for generating world space positions, and then the default projection matrix transforms those world space positions into clip space. Given a shader parameter, `float2 ScreenSize`,  the vertex shader can convert back from the world-space positions  (`S`, `D`, `F`, and `G`)  to the `P` position by subtracting `.5 * ScreenSize * TexCoord` from the current vertex. 
+
+The `Color` data is used to tint the resulting sprite in the pixel shader, but in our use case for a shadow hull, we don't really need a color whatsoever. Instead, we can use this `float4` field as arbitrary data. The trick is that we will need to pack whatever data we need into a `float4` and pass it via the `Color` type in MonoGame. This color comes from the `Color` value passed to the `SpriteBatch`'s `Draw()` call. 
+
+The `Position` and `Color` both use `float4` in the standard vertex shader input, and it _may_ appear as though they should have the same about precision. However they are not passed from MonoGame's `SpriteBatch` as the same type. When `SpriteBatch` goes to draw a sprite, it uses a `Color` for the `Color`, and a `Vector3` for the `Position`. A `Color` has 4 `bytes`, but a `Vector3` has 12 `bytes`. This can be seen in the [`VertexPositionColorTexture`](https://github.com/MonoGame/MonoGame/blob/develop/MonoGame.Framework/Graphics/Vertices/VertexPositionColorTexture.cs#L103) class. The takeaway is that we can only pack a third as much data into the `Color` semantic as the `Position` gets, and that may limit the types of values we want to pack into the `Color` value. 
+
+Finally, the light's position must be provided as a shader parameter, `float2 LightPosition`. The light's position should be in the same world-space coordinate system that the light is being drawn at itself. 
+
+
+### Vertex Shader Theory
+
+Now that we have a good understanding of the available inputs, and the goal of the vertex function, we can begin moving towards a solution. Unlike the previous chapters, we are going to build up a fair bit of math before converting any of this is to a working shader. To begin, we draw the pixel _at_ the start of the line segment itself, `A`. The position where the pixel is drawn is definitionally `P`, so by drawing the pixel at `A`, we have set `A = P`. 
+
+Every point (`S`, `D`, `F`, and `G`) needs to find `P`. To do that, the `TexCoord` can be treated as a direction from `P` to the current point, and the `ScreenSize` shader parameter can be used to find the right amount of distance to travel along that direction. 
+
+```
+float2 pos = input.Position.xy;
+float2 P = pos - (.5 * input.TexCoord) / ScreenSize;
+float2 A = P;
+```
+
+Next, we pack the `Color` value as the vector `(B - A)`. The `x` component of the vector can live in the `red` and `green` channels of the `Color`, and the `y` component will live in the `blue` and `alpha` channels. In the vertex shader, `B` can be derived by unpacking the `(B - A)` vector from the `COLOR` semantic and _adding_ it to the `A`. The reason we pack the _difference_ between `B` and `A` into the `Color`, and not `B` itself is due the lack of precision in the `Color` type. There are only 4 `bytes` to pack all the information, which means 2 `bytes` per `x` and `y`. Likely, the line segment will be small, so the values of `(B - A)` will fit easier into a 2 `byte` channel. 
+```hlsl
+float2 aToB = unpack(input.Color);
+float2 B = A + aToB;
+```
+
+The point `a` must lay _somewhere_ on the ray cast from the `LightPosition` to the start of the line segment, `A`. Additionally, the point `a` must lay _beyond_ `A` from the light's perspective. The direction of the ray can be calculated as,
+```
+float2 lightRayA = normalize(A - LightPosition);
+```
+
+Then, given some `distance`,  beyond `A`, the point `a` can be produced as,
+```hlsl
+float2 a = A + distance * lightRayA;
+```
+
+The same can be said for `b`, 
+```hlsl
+float2 lightRayB = normalize(B - LightPosition);
+float2 b = B + distance * lightRayB;
+```
+
+Now the vertex shader function knows all positions, `A`, `a`, `b`, and `B`. The `TexCoord` can be used to derive a unique id, and the unique id can be used to select one of the points. 
+
+```hlsl
+int id = input.TexCoord.x + input.TexCoord.y * 2;
+if (id == 0) {        // S --> A
+	pos = A;
+} else if (id == 1) { // D --> a
+	pos = a;
+} else if (id == 3) { // F --> b
+	pos = b;
+} else if (id == 2) { // G --> B
+	pos = B;
+}
+```
+
+Once all of the positions are mapped, our goal is complete! We have a vertex function and strategy to convert a single pixel's 4 vertices into the 4 vertices of a shadow hull! 
+
+### Implementation
+
+To start implementing the effect, create a new Sprite Effect in the `MonoGameLibrary`'s common content effect folder called `shadowHullEffect.fx`. Load it into the `Core` class as before in the previous chapters. 
+
+Add it as a class member, 
+```csharp
+/// <summary>  
+/// The  material that draws shadow hulls  
+/// </summary>  
+public static Material ShadowHullMaterial { get; private set; }
+```
+
+Load it as watched content in the `LoadContent()` method,
+```csharp
+ShadowHullMaterial = SharedContent.WatchMaterial("effects/shadowHullEffect");
+ShadowHullMaterial.IsDebugVisible = true;
+```
+
+Make sure to call `Update()` on the `Material` in the `Core`'s `Update()` method. Without this, hot-reload won't work.
+```csharp
+ShadowHullMaterial.Update();
+```
+
+To represent the shadow casting objects in the game, we will create a new class called `ShadowCaster` in the _MonoGameLibrary_'s graphics folder. For now, keep the `ShadowCaster` class as simple as possible while we build the basics. It will just hold the positions of the line segment from the theory section, `A`, and `B`. 
+```csharp
+using Microsoft.Xna.Framework;  
+namespace MonoGameLibrary.Graphics;  
+  
+public class ShadowCaster  
+{  
+    public Vector2 A;  
+    public Vector2 B;  
+}
+```
+
+In the `GameScene`, add a class member to hold all the various `ShadowCasters` that will exist in the game. 
+```csharp
+// A list of shadow casters for all the lights  
+private List<ShadowCaster> _shadowCasters = new List<ShadowCaster>();
+```
+
+For now, for simplicity, re-configure the `InitializeLights()` function in the `GameScene` to have a single `PointLight` and a single `ShadowCaster`. 
+```csharp
+private void InitializeLights()
+{
+	// torch 1
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(500, 360),
+		Color = Color.CornflowerBlue,
+		Radius = 700
+	});
+	
+	// simple shadow caster
+	_shadowCasters.Add(new ShadowCaster
+	{
+		A = new Vector2(700, 320),
+		B = new Vector2(700, 400)
+	});
+}
+```
+
+
+Every `PointLight` needs its own `ShadowBuffer`. Add a new `RenderTarget2D` field to the `PointLight` class,
+```csharp
+public RenderTarget2D ShadowBuffer { get; set; }
+```
+
+And instantiate the `ShaderBuffer` in the `PointLight`'s constructor,
+```csharp
+public PointLight()
+{
+	var viewPort = Core.GraphicsDevice.Viewport;
+	ShadowBuffer = new RenderTarget2D(Core.GraphicsDevice, viewPort.Width, viewPort.Height, false, SurfaceFormat.Color,  DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+}
+```
+
+
+Now, we need to find a place to render the `ShadowBuffer` _per_ `PointLight` before the deferred renderer draws the light itself. Copy this function into the `PointLight` class.
+```csharp
+public void DrawShadowBuffer(List<ShadowCaster> shadowCasters)
+{
+	Core.GraphicsDevice.SetRenderTarget(ShadowBuffer);
+	Core.GraphicsDevice.Clear(Color.Black);
+ 
+	Core.ShadowHullMaterial.SetParameter("LightPos", Position);
+	var screenSize = new Vector2(ShadowBuffer.Width, ShadowBuffer.Height);
+	Core.ShadowHullMaterial.SetParameter("ScreenSize", screenSize);
+	Core.SpriteBatch.Begin(
+			effect: Core.ShadowHullMaterial.Effect, 
+			rasterizerState: RasterizerState.CullNone
+			);
+	foreach (var caster in shadowCasters)
+	{
+		var posA = caster.A;
+		// TODO: pack the (B-A) vector into the color channel.
+		Core.SpriteBatch.Draw(Core.Pixel, posA, Color.White);
+	}
+	Core.SpriteBatch.End();
+}
+```
+
+> [!warning] The `(B-A)` vector isn't being packed yet into the color channel
+> We will come back to that soon!
+
+Next, create a second method that will call the `DrawShadowBuffer` function for a list of lights and shadow casters, 
+```csharp
+public static void DrawShadows(
+	List<PointLight> pointLights,
+	List<ShadowCaster> shadowCasters)
+{
+	foreach (var light in pointLights)
+	{
+		light.DrawShadowBuffer(shadowCasters);
+	}
+}
+```
+
+And finally, call the `DrawShadows()` method right before the `GameScene` calls the `DeferredRenderer`'s `StartLightPass()` method.
+```csharp
+// render the shadow buffers
+PointLight.DrawShadows(_lights, _shadowCasters);
+```
+
+For debug visualization purposes, add this snippet at the end of the `GameScene`'s `Draw()` just so you can see the `ShaderBuffer` as we debug it. 
+```csharp
+Core.SpriteBatch.Begin();  
+Core.SpriteBatch.Draw(_lights[0].ShadowBuffer, Vector2.Zero, Color.White);  
+Core.SpriteBatch.End();
+```
+
+When you run the game, you will see a totally blank white screen. This is because the shadow map is currently being cleared to `black` to start, and the debug view renders that on top of everything else.
+
+![Figure 9.8: A blank shadow buffer](./images/shadow_map_blank.png)
+
+We cannot implement the vertex shader theory until we can pack the `(B-A)` vector into the `Color` argument for the `SpriteBatch`. For the sake of brevity, we will skip over the derivation of these functions. If you would like to know more, research bit-packing. Add this function to your `PointLight` class,
+
+```csharp
+public static Color PackVector2_SNorm(Vector2 vec)  
+{  
+    // Clamp to [-1, 1)  
+    vec = Vector2.Clamp(vec, new Vector2(-1f), new Vector2(1f - 1f / 32768f));  
+  
+    short xInt = (short)(vec.X * 32767f); // signed 16-bit  
+    short yInt = (short)(vec.Y * 32767f);  
+  
+    byte r = (byte)((xInt >> 8) & 0xFF);  
+    byte g = (byte)(xInt & 0xFF);  
+    byte b = (byte)((yInt >> 8) & 0xFF);  
+    byte a = (byte)(yInt & 0xFF);  
+  
+    return new Color(r, g, b, a);  
+}
+```
+
+And then to use the packing function, in the `DrawShadowBuffer` function, instead of passing `Color.White` like before, we need to create the `bToA` vector, pack it a `Color`, and then pass it to the `SpriteBatch`. 
+```csharp
+foreach (var caster in shadowCasters)  
+{  
+    var posA = caster.A;  
+    var aToB = (caster.B - caster.A) / screenSize;  
+    var packed = PackVector2_SNorm(aToB);  
+    Core.SpriteBatch.Draw(Core.Pixel, posA, packed);  
+}
+```
+
+On the shader side, add this function to your `shadowHullEffect.fx` file,
+```hlsl
+float2 UnpackVector2FromColor_SNorm(float4 color)  
+{  
+    // Convert [0,1] to byte range [0,255]  
+    float4 bytes = color * 255.0;  
+  
+    // Reconstruct 16-bit unsigned ints (x and y)  
+    float xInt = bytes.r * 256.0 + bytes.g;  
+    float yInt = bytes.b * 256.0 + bytes.a;  
+  
+    // Convert from unsigned to signed short range [-32768, 32767]  
+    if (xInt >= 32768.0) xInt -= 65536.0;  
+    if (yInt >= 32768.0) yInt -= 65536.0;  
+  
+    // Convert from signed 16-bit to float in [-1, 1]  
+    float x = xInt / 32767.0;  
+    float y = yInt / 32767.0;  
+  
+    return float2(x, y);  
+}
+```
+
+Now we have the tools to start implementing the vertex shader! Of course, anytime you want to override the default `SpriteBatch` vertex shader, the shader needs to fulfill the world-space to clip-space transformation. We can re-use the work done in previous chapters. Replace the `VertexShaderOutput` struct with the `#include "3dEffect.fxh"` line. Create a basic template for the vertex shader function, 
+```hlsl
+VertexShaderOutput ShadowHullVS(VertexShaderInput input)   
+{     
+    VertexShaderOutput output = MainVS(input);  
+    return output;  
+}
+```
+
+And don't forget to set the technique for the vertex shader function,
+```hlsl
+technique SpriteDrawing  
+{  
+   pass P0  
+   {  
+      PixelShader = compile PS_SHADERMODEL MainPS();  
+      VertexShader = compile VS_SHADERMODEL ShadowHullVS();  
+   }  
+};
+```
+
+The last step to make sure the default vertex shader works is to pass the `MatrixTransform` and `ScreenSize` shader parameters in the `GameScene`'s `Update()` loop, next to where they're being configured for the existing `PointLightMaterial`. 
+```csharp
+Core.ShadowHullMaterial.SetParameter("MatrixTransform", matrixTransform);  
+Core.ShadowHullMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+```
+
+The pixel shader function for the `shadowHullEffect` needs to ignore the `input.Color` and just return a solid color.
+```hlsl
+float4 MainPS(VertexShaderOutput input) : COLOR  
+{  
+    return 1; // return white  
+}
+```
+
+The vertex shader function is derived from the theory section above, but is written out in complete form below,
+```hlsl
+  
+float2 LightPosition;  
+VertexShaderOutput ShadowHullVS(VertexShaderInput input)   
+{     
+    VertexShaderInput modified = input;  
+    float distance = ScreenSize.x + ScreenSize.y;  
+    float2 pos = input.Position.xy;  
+      
+    float2 P = pos - (.5 * input.TexCoord) / ScreenSize;  
+    float2 A = P;  
+      
+    float2 aToB = UnpackVector2FromColor_SNorm(input.Color) * ScreenSize;  
+    float2 B = A + aToB;  
+      
+    float2 lightRayA = normalize(A - LightPosition);  
+    float2 a = A + distance * lightRayA;  
+    float2 lightRayB = normalize(B - LightPosition);  
+    float2 b = B + distance * lightRayB;      
+      
+    int id = input.TexCoord.x + input.TexCoord.y * 2;  
+    if (id == 0) {        // S --> A  
+       pos = A;  
+    } else if (id == 1) { // D --> a  
+       pos = a;  
+    } else if (id == 3) { // F --> b  
+       pos = b;  
+    } else if (id == 2) { // G --> B  
+       pos = B;  
+    }  
+      
+    modified.Position.xy = pos;  
+    VertexShaderOutput output = MainVS(modified);  
+    return output;  
+}
+```
+
+Now if you run the game, you will see the white shadow hull. 
+![Figure 9.9: A shadow hull](./images/shadow_map.png)
+
+To get the basic shadow effect working with the rest of the renderer, we need to do the multiplication step between the `ShadowBuffer` and the `LightBuffer` in the `pointLightEffect.fx` shader. Add a second texture and sampler for the `pointLightEffect.fx` file,
+```hlsl
+Texture2D ShadowBuffer;  
+sampler2D ShadowBufferSampler = sampler_state  
+{  
+   Texture = <ShadowBuffer>;  
+};
+```
+
+Then, in the `MainPS` of the light effect, read the current value from the shadow buffer,
+```hlsl
+float shadow = tex2D(ShadowBufferSampler,input.ScreenCoordinates).r;
+```
+
+And use it as a multiplier at the end when calculating the final light color,
+```hlsl
+color.a *= falloff * lightAmount * shadow;
+```
+
+Before running the game, make sure to pass the `ShadowBuffer` to the point light's draw invocation. In the `Draw()` method in the `PointLight` class, change the `SpriteBatch` to use `Immediate` sorting, and forward the `ShadowBuffer` to the shader parameter for each light.
+
+```csharp
+public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, List<ShadowCaster> shadowCasters, Texture2D normalBuffer)
+{
+	spriteBatch.Begin(
+		effect: Core.PointLightMaterial.Effect,
+		blendState: BlendState.Additive,
+		sortMode: SpriteSortMode.Immediate
+		);
+	
+	foreach (var light in pointLights)
+	{
+		Core.PointLightMaterial.SetParameter("ShadowBuffer", light.ShadowBuffer);
+		var diameter = light.Radius * 2;
+		var rect = new Rectangle((int)(light.Position.X - light.Radius), (int)(light.Position.Y - light.Radius), diameter, diameter);
+		spriteBatch.Draw(normalBuffer, rect, light.Color);
+	}
+	
+	spriteBatch.End();
+}
+```
+
+Disable the debug visualization to render the `ShadowMap` on top of everything else, and run the game. 
+
+![Figure 9.10: The light is appearing inversed](./images/shadow_map_backwards.png)
+
+Oops, the shadows and lights are appearing opposite of where they should! That is because the `ShadowBuffer` is inverted. Change the clear color for the `ShadowBuffer` to _white_, 
+```csharp
+public void DrawShadowBuffer(List<ShadowCaster> shadowCasters)  
+{  
+    Core.GraphicsDevice.SetRenderTarget(ShadowBuffer);  
+    // clear the shadow buffer to white to start  
+    Core.GraphicsDevice.Clear(Color.White);
+    // ...
+```
+
+And change the pixel shader to return a solid black rather than white. 
+```hlsl
+float4 MainPS(VertexShaderOutput input) : COLOR  
+{  
+    return float4(0,0,0,1); // return black  
+}
+```
+
+And now the shadow appears correctly for our simple single line segment!
+![Figure 9.11: A working shadow!](./images/shadow_map_working.png)
+
+## More Segments
+
+TODO:
+1. research stencil buffer?
+2. better render texture format
+3. don't _just_ multiply, use an add to fake ambient
+4. back faces? 
