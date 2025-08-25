@@ -478,6 +478,229 @@ And now the shadow appears correctly for our simple single line segment!
 
 ## More Segments
 
+So far, we have built up an intuition for the shadow caster system using a single line segment. Now, we will combine many line segments to create primitive shapes. We will approximate the slime character as a hexagon. 
+
+Instead of only having `A` and `B` in the `ShadowCaster` class, change the class body to have a `Position` and a list of points.
+```csharp
+public class ShadowCaster
+{
+    /// <summary>
+    /// The position of the shadow caster
+    /// </summary>
+    public Vector2 Position;
+    
+    /// <summary>
+    /// A list of at least 2 points that will be used to create a closed loop shape.
+    /// The points are relative to the position.
+    /// </summary>
+    public List<Vector2> Points;
+}
+```
+
+To create simple polygons, add this method to the `ShadowCaster` class. 
+```csharp
+public static ShadowCaster SimplePolygon(Point position, float radius, int sides)
+{
+	var anglePerSide = MathHelper.TwoPi / sides;
+	var caster = new ShadowCaster
+	{
+		Position = position.ToVector2(),
+		Points = new List<Vector2>(sides)
+	};
+	for (var angle = 0f; angle < MathHelper.TwoPi; angle += anglePerSide)
+	{
+		var pt = radius * new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+		caster.Points.Add(pt);
+	}
+
+	return caster;
+}
+```
+
+Then, in the `InitializeLights()` function in the `GameScene`, instead of constructing a `ShadowCaster` with the `A` and `B` properties, we can use the new `SimplePolygon` method,
+```csharp
+// simple shadow caster  
+_shadowCasters.Add(ShadowCaster.SimplePolygon(_slime.GetBounds().Location, radius: 50, sides: 6));
+```
+
+Finally, the last place we need to change is the `DrawShadowBuffer()` method. Currently it is just drawing a single pixel with the `ShadowHullMaterial`, but now we need to draw a pixel _per_ line segment. Update the `foreach` block to loop over all the points in the `ShadowCaster`, and connect the points as line segments.
+```csharp
+foreach (var caster in shadowCasters)
+{
+	for (var i = 0; i < caster.Points.Count; i++)
+	{
+		var a = caster.Position + caster.Points[i];
+		var b = caster.Position + caster.Points[(i + 1) % caster.Points.Count];
+
+		var aToB = (b - a) / screenSize;
+		var packed = PackVector2_SNorm(aToB);
+		Core.SpriteBatch.Draw(Core.Pixel, a, packed);
+	}
+}
+```
+
+When you run the game, you will see a larger shadow shape.
+![Figure 9.12: A shadow hull from a hexagon](./images/shadow_map_hex.png)
+
+There are a few problems with the current effect. First off, there is a visual artifact going horizontally through the center of the shadow caster where it appears light is "leaking" in. This is likely due to numerical accuracy issues in the shader. A simple solution is to slightly extend the line segment in the vertex shader. After both `A` and `B` are calculated, but before `a` and `b`, add this to the shader. 
+```hlsl
+float2 direction = normalize(aToB);  
+A -= direction; // move A back along the segment by one unit
+B += direction; // move B forward along the segment by one unit
+```
+
+And now the visual artifact has gone away.
+![Figure 9.13: The visual artifact has been fixed](./images/shadow_map_hex_2.png)
+
+The next item to consider is that the the "inside" of the slime isn't being lit. All of the segments are casting shadows, but it would be nice if only the segments on the far side of the slime cast shadows. We can take advantage of the fact that all of the line segments making up the shadow caster are _wound_ in the same direction.
+```hlsl
+// cull faces  
+float2 normal = float2(-direction.y, direction.x);  
+float alignment = dot(normal, (LightPosition - A));  
+if (alignment < 0){  
+    modified.Color.a = -1;  
+}
+```
+
+And then in the pixel shader function, add this line to the top. The `clip` function will completely discard the fragment and not draw anything to the `ShadowBuffer`. 
+```hlsl
+clip(input.Color.a);
+```
+
+Now the slime looks well lit and shadowed! Feel free to play with the size of the shadow caster as well as the exact points themselves. 
+![Figure 9.14: The slime is well lit](./images/shadow_map_hex_3.png)
+
+## Gameplay
+
+Now that we can draw shadows in the lighting system, we should rig up shadows to the slime, the bat, and the walls of the dungeon. First, start by adding back the `InitializeLights()` method as it existed at the start of the chapter. Feel free to add or remove lights as you see fit. Here is a version of the function.
+```csharp
+private void InitializeLights()
+{
+	// torch 1
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(260, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 2
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(520, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 3
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(740, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	// torch 4
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(1000, 100),
+		Color = Color.CornflowerBlue,
+		Radius = 500
+	});
+	
+	// random lights
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(Random.Shared.Next(50, 400),400),
+		Color = Color.MonoGameOrange,
+		Radius = 500
+	});
+	_lights.Add(new PointLight
+	{
+		Position = new Vector2(Random.Shared.Next(650, 1200),300),
+		Color = Color.MonoGameOrange,
+		Radius = 500
+	});
+}
+```
+
+Now, we will focus on the slime shadows. Add a new `List<ShadowCaster>` property to the `Slime` class. 
+
+```csharp
+/// <summary>  
+/// A list of shadow casters for all of the slime segments  
+/// </summary>  
+public List<ShadowCaster> ShadowCasters { get; private set; } = new List<ShadowCaster>();
+```
+
+And in the `Slime`'s `Update()` method, add this snippet,
+```csharp
+// Update the shadow casters
+if (ShadowCasters.Count != _segments.Count)
+{
+	ShadowCasters = new List<ShadowCaster>(_segments.Count);
+	for (var i = 0; i < _segments.Count; i++)
+	{
+		ShadowCasters.Add(ShadowCaster.SimplePolygon(Point.Zero, radius: 30, sides: 12));
+	}
+}
+
+// move the shadow casters to the current segment positions
+for (var i = 0; i < _segments.Count; i++)
+{
+	var segment = _segments[i];
+	Vector2 pos = Vector2.Lerp(segment.At, segment.To, _movementProgress);
+	var size = new Vector2(_sprite.Width, _sprite.Height);
+	ShadowCasters[i].Position = pos + size * .5f;
+}
+```
+
+Now, modify the `GameScene`'s `Draw()` method to create a master list of all the `ShadowCasters` and pass that into the `DrawShadows()` function, 
+```csharp
+// render the shadow buffers  
+var casters = new List<ShadowCaster>();  
+casters.AddRange(_shadowCasters);  
+casters.AddRange(_slime.ShadowCasters);  
+PointLight.DrawShadows(_lights, casters);
+```
+
+And now the slime has shadows around the segments!
+![Figure 9.15: The slime has shadows](./gifs/snake_shadow.gif)
+
+Next up, the bat needs some shadows! Add a `ShadowCaster` property to the `Bat` class,
+```csharp
+/// <summary>  
+/// The shadow caster for this bat  
+/// </summary>  
+public ShadowCaster ShadowCaster { get; private set; }
+```
+
+And instantiate it in the constructor,
+```csharp
+ShadowCaster = ShadowCaster.SimplePolygon(Point.Zero, radius: 10, sides: 12);
+```
+
+In the `Bat`'s `Update()` method, update the position of the `ShadowCaster`, 
+```csharp
+// Update the position of the shadow caster. Move it up a bit due to the bat's artwork.  
+var size = new Vector2(_sprite.Width, _sprite.Height);  
+ShadowCaster.Position = Position - Vector2.UnitY * 10 + size * .5f;
+```
+
+And finally add the `ShadowCaster` to the master list of shadow casters during the `GameScene`'s `Draw()` method,
+```csharp
+// render the shadow buffers  
+var casters = new List<ShadowCaster>();  
+casters.AddRange(_shadowCasters);  
+casters.AddRange(_slime.ShadowCasters);  
+casters.Add(_bat.ShadowCaster);  
+PointLight.DrawShadows(_lights, casters);
+```
+
+And now the bat is casting a shadow as well!
+![Figure 9.16: The bat casts a shadow](./gifs/bat_shadow.gif)
+
+Lastly, the walls should cast shadows to help ground the lighting in the world. 
+
+
+
 TODO:
 1. research stencil buffer?
 2. better render texture format
