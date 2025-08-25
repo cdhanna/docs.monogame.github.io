@@ -698,11 +698,23 @@ And now the bat is casting a shadow as well!
 ![Figure 9.16: The bat casts a shadow](./gifs/bat_shadow.gif)
 
 Lastly, the walls should cast shadows to help ground the lighting in the world. 
+Add a shadow caster in the `InitializeLights()` function to represent the edge of the playable tiles, 
+```csharp
+var tileUnit = new Vector2(_tilemap.TileWidth, _tilemap.TileHeight);  
+var size = new Vector2(_tilemap.Columns, _tilemap.Rows);  
+_shadowCasters.Add(new ShadowCaster  
+{  
+    Points = new List<Vector2>  
+    {        tileUnit * new Vector2(1, 1),  
+        tileUnit * new Vector2(size.X - 1, 1),  
+        tileUnit * new Vector2(size.X - 1, size.Y - 1),  
+        tileUnit * new Vector2(1, size.Y - 1),  
+    }  
+});
+```
 
+![Figure 9.17: The walls have shadows](./gifs/wall_shadow.gif)
 
+## Conclusion
 
-TODO:
-1. research stencil buffer?
-2. better render texture format
-3. don't _just_ multiply, use an add to fake ambient
-4. back faces? 
+TODO
