@@ -715,6 +715,305 @@ _shadowCasters.Add(new ShadowCaster
 
 ![Figure 9.17: The walls have shadows](./gifs/wall_shadow.gif)
 
+
+## The Stencil Buffer
+
+The light and shadow system is working! However, there is a non trivial amount of memory overhead for the effect. Every light has a full screen sized `ShadowBuffer`. At the moment, each `ShadowBuffer` is a `RenderTarget2D` with `32` bits of data per pixel. At our screen resolution of `1280` x `720`, that means every light adds roughly (`1280 * 720 * 32bits`) 3.6 _MB_ of overhead to the game! Our system is not taking full advantage of those 32 bits per pixel. Instead, all we really need is a _single_ bit, for "in shadow" or "not in shadow". In fact, all the `ShadowBuffer` is doing is operating as a _mask_ for the point light. 
+
+Image masking is a common task in computer graphics. There is a built-in feature of MonoGame called the _Stencil Buffer_ that handles image masking without the need for any custom `RenderTarget` or shader logic. In fact, we will be able to remove a lot of the existing code and leverage the stencil instead. 
+
+The stencil buffer is a part of an existing `RenderTarget`, but we need to opt into using it. In the `DeferredRenderer` class, where the `LightBuffer` is being instantiated, change the `preferredDepthFormat` to `DepthFormat.Depth24Stencil8`.
+```csharp
+LightBuffer = new RenderTarget2D(  
+    graphicsDevice: Core.GraphicsDevice,   
+    width: viewport.Width,  
+    height: viewport.Height,  
+    mipMap: false,  
+    preferredFormat: SurfaceFormat.Color,   
+    preferredDepthFormat: DepthFormat.Depth24Stencil8);
+```
+
+The `LightBuffer` itself has `32` bits per pixel of `Color` data, _and_ an additional `32` bits of data split between the depth and stencil buffers. As the name suggests, the `Depth24Stencil8` format grants the depth buffer `24` bits of data, and the stencil buffer `8` bits of data. `8` bits is enough for a single `byte`, which means it can represent integers from `0` to `255`. 
+
+For our use case, we will deal with the stencil buffer in two distinct steps. First, all of the shadow hulls will be drawn into the stencil buffer _instead_ of a unique `ShadowBuffer`. Anywhere a shadow hull is drawn, the stencil buffer will have a value of `1`, and anywhere without a shadow hull will have a value of `0`. Then, in the second step, when the point lights are drawn, the stencil buffer can be used as a mask where pixels are only drawn where the stencil buffer has a value of `0` (which means there was no shadow hull present in the previous step). 
+
+The stencil buffer can be cleared and re-used between each light, so there is no need to have a buffer _per_ light. We will be able to completely remove the `ShadowBuffer` from the `PointLight` class. That also means we won't need to send the `ShadowBuffer` to the point light shader or read from it in shader code any longer. 
+
+To get started, create a new method in the `DeferredRenderer` class called `DrawLights()`. This new method is going to completely replace some of our existing methods, but we will clean the unnecessary ones up when we are done with the new approach. 
+
+```csharp
+public void DrawLights(List<PointLight> lights, List<ShadowCaster> shadowCasters)  
+{
+	// 
+}
+```
+
+In the `GameScene`'s `Draw()` method, call the new `DrawLights()` method instead of the `DrawShadows()`, `StartLightPhase()` _and_ `PointLight.Draw()` methods. Here is a snippet of the `Draw()` method.
+```csharp
+// render the shadow buffers  
+var casters = new List<ShadowCaster>();  
+casters.AddRange(_shadowCasters);  
+casters.AddRange(_slime.ShadowCasters);  
+casters.Add(_bat.ShadowCaster);  
+  
+// start rendering the lights  
+_deferredRenderer.DrawLights(_lights, casters);  
+  
+// finish the deferred rendering  
+_deferredRenderer.Finish();
+```
+
+Next, in the `pointLightEffect.fx` shader, we won't be using the `ShadowBuffer` anymore, so remove the `Texture2D ShadowBuffer` and `sampler2D ShadowBufferSampler`. Remove the `tex2D` read from the shadow image, and remove the final multiplication of the `shadow`. The end of the `pointLightEffect.fx` shader should read as follows,
+```hlsl
+float4 color = input.Color;  
+color.a *= falloff * lightAmount;  
+return color;
+```
+
+If you run the game now, you won't see any of the lights anymore. 
+![Figure 9.15: Back to square one](./images/stencil_blank.png)
+
+In the new `DrawLights()` method, we need to iterate over all the lights, and draw them. First, we need to set the current render target to the `LightBuffer` so it can be used in the deferred renderer composite stage. 
+
+```csharp
+
+    public void DrawLights(List<PointLight> lights, List<ShadowCaster> shadowCasters)
+    {
+        Core.GraphicsDevice.SetRenderTarget(LightBuffer);
+        Core.GraphicsDevice.Clear(Color.Black);
+        
+        foreach (var light in lights)
+        {
+            Core.SpriteBatch.Begin(
+                effect: Core.PointLightMaterial.Effect,
+                blendState: BlendState.Additive
+            );
+
+            var diameter = light.Radius * 2;
+            var rect = new Rectangle(
+	            (int)(light.Position.X - light.Radius), 
+	            (int)(light.Position.Y - light.Radius),
+                diameter, diameter);
+            Core.SpriteBatch.Draw(NormalBuffer, rect, light.Color);
+            Core.SpriteBatch.End();
+
+        }
+    }
+```
+
+Now the lights are back, but of course no shadows yet. 
+![Figure 9.16: Welcome back, lights](./images/stencil_lights.png)
+
+As each light is about to draw, we need to draw the shadow hulls. Add this snippet to the top of the `foreach` loop. This code is mainly copied from our previous approach. 
+```csharp
+Core.ShadowHullMaterial.SetParameter("LightPosition", light.Position);         
+Core.SpriteBatch.Begin(
+	effect: Core.ShadowHullMaterial.Effect,
+	blendState: BlendState.Opaque,
+	rasterizerState: RasterizerState.CullNone
+);
+foreach (var caster in shadowCasters)
+{
+	for (var i = 0; i < caster.Points.Count; i++)
+	{
+		var a = caster.Position + caster.Points[i];
+		var b = caster.Position + caster.Points[(i + 1) % caster.Points.Count];
+
+		var screenSize = new Vector2(LightBuffer.Width, LightBuffer.Height);
+		var aToB = (b - a) / screenSize;
+		var packed = PointLight.PackVector2_SNorm(aToB);
+		Core.SpriteBatch.Draw(Core.Pixel, a, packed);
+	}
+}
+
+Core.SpriteBatch.End();
+```
+
+This produces strange results. So far, the stencil buffer isn't being used yet, so all we are doing is rendering the shadow hulls onto the same image as the light data itself. Worse, the alternating order from rendering shadows to lights, back to shadows, and so on produces very visually decoherent results.
+![Figure 9.17: Worse shadows](./images/stencil_pre.png)
+
+Instead of writing the shadow hulls as _color_ into the color portion of the `LightBuffer`, we only need to render the `1` or `0` to the stencil buffer portion of the `LightBuffer`. To do this, we need to create a new `DepthStencilState` variable. The `DepthStencilState` is a MonoGame primitive that describes how draw call operations should interact with the stencil buffer. Create a new class variable in the `DeferredRenderer` class
+```csharp
+/// <summary>  
+/// The state used when writing shadow hulls  
+/// </summary>  
+private DepthStencilState _stencilWrite;
+```
+
+And initialize it in the constructor,
+```csharp
+_stencilWrite = new DepthStencilState
+{
+	// instruct MonoGame to use the stencil buffer
+	StencilEnable = true,
+	
+	// instruct every fragment to interact with the stencil buffer
+	StencilFunction = CompareFunction.Always,
+	
+	// every operation will replace the current value in the stencil buffer
+	//  with whatever value is in the ReferenceStencil variable
+	StencilPass = StencilOperation.Replace,
+	
+	// this is the value that will be written into the stencil buffer
+	ReferenceStencil = 1,
+	
+	// ignore depth from the stencil buffer write/reads  
+	DepthBufferEnable = false
+};
+```
+
+The `_stencilWrite` variable is a declarative structure that tells MonoGame how the stencil buffer should be used during a `SpriteBatch` draw call. The next step is to actually pass the `_stencilWrite` declaration into the `SpriteBatch`'s `Draw()` call when the shadow hulls are being rendered.
+```csharp
+Core.SpriteBatch.Begin(
+	depthStencilState: _stencilWrite,
+	effect: Core.ShadowHullMaterial.Effect,
+	blendState: BlendState.Opaque,
+	rasterizerState: RasterizerState.CullNone
+);
+```
+
+Unfortunately, there is not a good way to visualize the state of the stencil buffer, so if you run the game, it is hard to tell if the stencil buffer contains any data. Instead, we will try and _use_ the stencil buffer's data when the point lights are drawn. The point lights won't interact with the stencil buffer in the same way the shadow hulls did. To capture the new behavior, create a second `DepthStencilState` class variable.
+
+```csharp
+/// <summary>  
+/// The state used when drawing point lights  
+/// </summary>  
+private DepthStencilState _stencilTest;
+```
+
+And initialize it in the constructor,
+```csharp
+_stencilTest = new DepthStencilState
+{
+	// instruct MonoGame to use the stencil buffer
+	StencilEnable = true,
+	
+	// instruct only fragments that have a current value EQUAl to the
+	//  ReferenceStencil value to interact
+	StencilFunction = CompareFunction.Equal,
+	
+	// shadow hulls wrote `1`, so `0` means "not" shadow. 
+	ReferenceStencil = 0,
+	
+	// don't change the value of the stencil buffer. KEEP the current value.
+	StencilPass = StencilOperation.Keep,
+	
+	// ignore depth from the stencil buffer write/reads
+	DepthBufferEnable = false
+};
+```
+
+And now pass the new `_stencilTest` state to the `SpriteBatch` `Draw()` call that draws the point lights.
+```csharp
+Core.SpriteBatch.Begin(  
+    depthStencilState: _stencilTest,  
+    effect: Core.PointLightMaterial.Effect,  
+    blendState: BlendState.Additive  
+);
+```
+
+The shadows look _better_, but something is still broken. It looks eerily similar to the previous iteration before passing the `_stencilTest` and `_stencilWrite` declarations to `SpriteBatch`...
+
+![Figure 9.18: The shadows still look funky](./images/stencil_blend.png)
+This happens because the shadow hulls are _still_ being drawn as colors into the `LightBuffer`. The shadow hull shader is rendering a black pixel, so those black pixels are drawing on top of the `LightBuffer` 's previous point lights. To solve this, we need to create a custom `BlendState` that ignores all color channel writes. Create a new class variable in the `DeferredRenderer`. 
+
+```csharp
+/// <summary>  
+/// A custom blend state that wont write any color data  
+/// </summary>  
+private BlendState _shadowBlendState;
+```
+
+And initialize it in the constructor,
+```csharp
+_shadowBlendState = new BlendState  
+{  
+    // no color channels will be written into the render target  
+    ColorWriteChannels = ColorWriteChannels.None  
+};
+```
+
+Finally, pas it to the shadow hull `SpriteBatch` call.
+```csharp
+Core.SpriteBatch.Begin(  
+    depthStencilState: _stencilWrite,  
+    effect: Core.ShadowHullMaterial.Effect,  
+    blendState: _shadowBlendState,  
+    rasterizerState: RasterizerState.CullNone  
+);
+```
+
+Now the shadows look closer, but there is one final issue. 
+
+![Figure 9.18: The shadows are back](./images/stencil_noclear.png)
+
+The `LightBuffer` is only being cleared at the start of the entire `DrawLights()` method. This means the `8` bits for the stencil data aren't being cleared between lights, so shadows from one light are overwriting into all subsequent lights. To fix this, we just need to clear the stencil buffer data before rendering the shadow hulls.
+
+```csharp
+Core.GraphicsDevice.Clear(ClearOptions.Stencil, Color.Black, 0, 0);
+```
+And now the lights are working again! The final `DrawLights()` method is written below.
+```csharp
+
+public void DrawLights(List<PointLight> lights, List<ShadowCaster> shadowCasters)
+{
+	Core.GraphicsDevice.SetRenderTarget(LightBuffer);
+	Core.GraphicsDevice.Clear(Color.Black);
+	foreach (var light in lights)
+	{
+		Core.GraphicsDevice.Clear(ClearOptions.Stencil, Color.Black, 0, 0);
+		Core.ShadowHullMaterial.SetParameter("LightPosition", light.Position);
+		
+		Core.SpriteBatch.Begin(
+			depthStencilState: _stencilWrite,
+			effect: Core.ShadowHullMaterial.Effect,
+			blendState: _shadowBlendState,
+			rasterizerState: RasterizerState.CullNone
+		);
+		foreach (var caster in shadowCasters)
+		{
+			for (var i = 0; i < caster.Points.Count; i++)
+			{
+				var a = caster.Position + caster.Points[i];
+				var b = caster.Position + caster.Points[(i + 1) % caster.Points.Count];
+		
+				var screenSize = new Vector2(LightBuffer.Width, LightBuffer.Height);
+				var aToB = (b - a) / screenSize;
+				var packed = PointLight.PackVector2_SNorm(aToB);
+				Core.SpriteBatch.Draw(Core.Pixel, a, packed);
+			}
+		}
+		
+		Core.SpriteBatch.End();
+	
+		
+		Core.SpriteBatch.Begin(
+			depthStencilState: _stencilTest,
+			effect: Core.PointLightMaterial.Effect,
+			blendState: BlendState.Additive
+		);
+
+		var diameter = light.Radius * 2;
+		var rect = new Rectangle(
+			(int)(light.Position.X - light.Radius), 
+			(int)(light.Position.Y - light.Radius),
+			diameter, diameter);
+		Core.SpriteBatch.Draw(NormalBuffer, rect, light.Color);
+		Core.SpriteBatch.End();
+
+	}
+}
+```
+
+![Figure 9.19: Lights using the stencil buffer](./gifs/stencil_working.gif)
+
+We can remove a lot of unnecessary code.
+1. The `DeferredRenderer.StartLightPhase()` function is no longer called. Remove it.
+2. The `PointLight.DrawShadows()` function is no longer called. Remove it.
+3. The `PointLight.Draw()` function is no longer called. Remove it.
+4. The `PointLight.DrawShadowBuffer()` function is no longer called. Remove it.
+5. The `PointLight.ShadowBuffer` `RenderTarget` is no longer used. Remove it. Anywhere that referenced the `ShadowBuffer` can also be removed. 
+
 ## Conclusion
 
 TODO

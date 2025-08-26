@@ -8,6 +8,7 @@ More effect ideas
 - Mix the color-swap with a screen transition effect
 
 Techniques
+- Signed Distance Fields
 - Custom Sprite Batch
 	- more shader input semantics
 	- more shader _output_ semantics (depth buffer?)
