@@ -1,4 +1,6 @@
-In the previous chapters, you set up a shader development workflow for MonoGame. Now it is time to start adding some new shaders to the _Dungeon Slime_ game! In this chapter, we will create a classic level transition effect. 
+Our game is functional, but the jump from the title screen to the game is very sudden. We can make it feel much more polished with a smooth transition instead of an instant cut.
+
+In this chapter, we'll dive into our first major pixel shader effect: a classic screen wipe! We'll learn how to control an effect over the whole screen, how to create soft edges, and how to use textures to drive our shader logic to create all sorts of interesting patterns. 
 
 
 ## The Scene Transition Effect
@@ -190,7 +192,7 @@ return float4(0, 0, transitioned, 1);
 Use the slider to control the `Progress` parameter to see how the image changes. 
 ![Figure 5.7: a simple horizontal screen wipe](./gifs/simple-x.gif)
 
-That looks pretty close to a screen wipe,  already! Instead of using blue and black, the effect should being using black and a transparent color. The following snippet of shader code puts the `transitioned` value in the alpha channel of the final color. When the alpha value is zero, the pixel fragment is drawn as invisible. 
+That looks pretty close to a screen wipe,  already! Instead of using blue and black, the effect should be using black and a transparent color. The following snippet of shader code puts the `transitioned` value in the alpha channel of the final color. When the alpha value is zero, the pixel fragment is drawn as invisible. 
 
 ```hlsl
 float2 uv = input.TextureCoordinates;  
@@ -211,7 +213,7 @@ This would be the most basic way to adjust the code to use `smoothstep`, but rig
 float transitioned = smoothstep(Progress, Progress + .05, uv.x);
 ```
 
-Using "magic numbers" in shader code is a dangerous pattern, because it is unclear if `.05` is there for a mathematical reason, or just an aesthetic choice. At minimum, we should extra the value into a named variable, so that the reader of the code can attribute _some_ sort of meaning to `.05`. 
+Using "magic numbers" in shader code is a dangerous pattern, because it is unclear if `.05` is there for a mathematical reason, or just an aesthetic choice. At minimum, we should extract the value into a named variable, so that the reader of the code can attribute _some_ sort of meaning to `.05`. 
 
 ```hlsl
 float EdgeWidth
@@ -325,11 +327,6 @@ As you play with the `Progress` parameter slide, you can see the more interestin
 ![Figure 5.19: The concave wipe in action](./gifs/concave-wipe.gif)
 
 Now it is as easy as changing the texture being used to draw the scene transition to completely change the wipe pattern. Try playing around with the other textures, or make one of your own. 
-
-### Correcting Aspect Ratio
-
-If you use the `radial` effect, you may notice something funky.
-TODO (or remove)
 
 
 ### Controlling the Effect 
@@ -502,4 +499,12 @@ protected override void LoadContent()
 
 ## Conclusion
 
-TODO
+Our game is already starting to feel more polished with this new transition effect. In this chapter, you accomplished the following:
+
+- Drew a full-screen quad to act as a canvas for a post-processing effect.
+- Used UV coordinates and the `smoothstep` function to create a soft-edged wipe.
+- Switched to a texture-based approach to drive the wipe logic with complex patterns.
+- Created a `SceneTransition` class to control the effect programmatically.
+- Refactored shared content into its own content project.
+
+This was our first deep dive into pixel shaders, and we've created a very flexible system. In the next chapter, we'll keep the momentum going by tackling another popular and powerful shader: a color-swapping effect.

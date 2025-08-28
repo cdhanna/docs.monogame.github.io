@@ -1,4 +1,6 @@
-In the previous chapter, you learned how to create a 2d lighting system. In this chapter, we will extend the system by adding dynamic shadows to the effect. 
+Our lighting system is looking great, but the lights don't feel fully grounded in the world. They shine right through the walls, the bat, and even our slime! To truly sell the illusion of light, we need darkness. We need shadows.
+
+In this, our final effects chapter, we're going to implement a dynamic 2D shadow system. The shadows will be drawn with a new vertex shader, and integrated into the point light shader from the previous chapter. After the effect is working, we will port the effect to use a more efficient approach. 
 ## 2D Shadows
 
 Take a look at the current lighting in _Dungeon Slime_. In this screenshot, there is a single light source. The bat and the slime don't cast shadows, and without these shadows, it is hard to visually identify where the light's position is. 
@@ -453,7 +455,7 @@ public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, L
 
 Disable the debug visualization to render the `ShadowMap` on top of everything else, and run the game. 
 
-![Figure 9.10: The light is appearing inversed](./images/shadow_map_backwards.png)
+![Figure 9.10: The light is appearing inverted](./images/shadow_map_backwards.png)
 
 Oops, the shadows and lights are appearing opposite of where they should! That is because the `ShadowBuffer` is inverted. Change the clear color for the `ShadowBuffer` to _white_, 
 ```csharp
@@ -718,7 +720,7 @@ _shadowCasters.Add(new ShadowCaster
 
 ## The Stencil Buffer
 
-The light and shadow system is working! However, there is a non trivial amount of memory overhead for the effect. Every light has a full screen sized `ShadowBuffer`. At the moment, each `ShadowBuffer` is a `RenderTarget2D` with `32` bits of data per pixel. At our screen resolution of `1280` x `720`, that means every light adds roughly (`1280 * 720 * 32bits`) 3.6 _MB_ of overhead to the game! Our system is not taking full advantage of those 32 bits per pixel. Instead, all we really need is a _single_ bit, for "in shadow" or "not in shadow". In fact, all the `ShadowBuffer` is doing is operating as a _mask_ for the point light. 
+The light and shadow system is working! However, there is a non-trivial amount of memory overhead for the effect. Every light has a full screen sized `ShadowBuffer`. At the moment, each `ShadowBuffer` is a `RenderTarget2D` with `32` bits of data per pixel. At our screen resolution of `1280` x `720`, that means every light adds roughly (`1280 * 720 * 32bits`) 3.6 _MB_ of overhead to the game! Our system is not taking full advantage of those 32 bits per pixel. Instead, all we really need is a _single_ bit, for "in shadow" or "not in shadow". In fact, all the `ShadowBuffer` is doing is operating as a _mask_ for the point light. 
 
 Image masking is a common task in computer graphics. There is a built-in feature of MonoGame called the _Stencil Buffer_ that handles image masking without the need for any custom `RenderTarget` or shader logic. In fact, we will be able to remove a lot of the existing code and leverage the stencil instead. 
 
@@ -1016,4 +1018,11 @@ We can remove a lot of unnecessary code.
 
 ## Conclusion
 
-TODO
+And with that, our lighting and shadow system is complete! In this chapter, you accomplished the following:
+
+- Learned the theory behind generating 2D shadow geometry from a light and a line segment.
+- Wrote a vertex shader to generate a "shadow hull" quad on the fly.
+- Implemented a shadow system using a memory-intensive texture-based approach.
+- Refactored the system to use the Stencil Buffer for masking.
+
+In the final chapter, we'll wrap up the series and discuss some other exciting graphics programming topics you could explore from here.

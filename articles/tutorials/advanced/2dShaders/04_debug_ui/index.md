@@ -1,8 +1,11 @@
-In the previous chapter, you set up a `Material` class to handle various quality of life features for working with shaders in MonoGame. In this chapter, we will continue developing the shader workflow by adding a _debug user interface_ for each `Material`. The UI will allow you to read and write shader parameters at runtime without needing to restart the game. 
+
+So far, any time we need to adjust a shader's parameter values, we need to edit C# code and recompile. It would be much faster to have a debug UI in the game itself that exposed all of the shader parameters as editable text fields and slider widgets. We can also use the sliders to change a shader's input parameter, and visualize the difference in realtime, which is a fantastic way to build intuition about our shader code. 
+
+In this chapter, we will add a popular library called ImGui.NET to create a developer-facing debug UI for our materials. Let's get it set up. 
 
 ## Adding a Debug UI Library
 
-A common approach to building debug UI's in games is to use an _Immediate Mode_ system. An immediate mode UI redraws the entire UI from scratch every frame. Immediate mode UIs make developing developer-facing debug tools easy. A popular library is called `DearImGui`, which has a dotnet C# port called `ImGui.NET`. 
+A common approach to building debug UIs in games is to use an _Immediate Mode_ system. An immediate mode UI redraws the entire UI from scratch every frame. Immediate mode UIs make developing developer-facing debug tools easy. A popular library is called `DearImGui`, which has a dotnet C# port called `ImGui.NET`. 
 
 To add `ImGUI.NET`, add the following Nuget package reference to the _MonoGameLibrary_ project,
 ```xml
@@ -11,7 +14,7 @@ To add `ImGUI.NET`, add the following Nuget package reference to the _MonoGameLi
 
 In order to render the `ImGui.NET` UI in MonoGame, we need a few supporting classes that convert the `ImGui.NET` data into MonoGame's graphical representation. There is a [sample project](https://github.com/ImGuiNET/ImGui.NET/tree/master/src/ImGui.NET.SampleProgram.XNA) on `ImGui.NET`'s public repository that we can copy for our use cases. 
 
-Create a new folder in the _MonoGameLibrary_ project called _ImGui_ and copy paste the following files into the folder, 
+Create a new folder in the _MonoGameLibrary_ project called _ImGui_ and copy and paste the following files into the folder, 
 - The [`ImGuiRenderer.cs`](https://github.com/ImGuiNET/ImGui.NET/blob/v1.91.6.1/src/ImGui.NET.SampleProgram.XNA/ImGuiRenderer.cs)
 - The [`DrawVertDeclaration.cs`](https://github.com/ImGuiNET/ImGui.NET/blob/v1.91.6.1/src/ImGui.NET.SampleProgram.XNA/DrawVertDeclaration.cs)
 
@@ -292,14 +295,77 @@ _grayscaleEffect.IsDebugVisible = true;
 
 >[!tip]
 >If you don't want to see the debug UI for the `grayscaleEffect` anymore, just delete the line of code that sets `IsDebugVisible` to `true`. 
+
+
 ## RenderDoc
 
-//TODO 
+The debug UI in the game is helpful, but sometimes you may need to take a closer look at the actual graphics resources _MonoGame_ is managing. There are various tools that intercept the graphics API calls between an application and the graphics software. [_RenderDoc_](https://renderdoc.org/) is a great example of a graphics debugger tool. Unfortunately, it only works with MonoGame when the game is targeting the WindowsDX profile. It may not be possible to switch your game to WindowsDX under all circumstances. At this time, there are very few options for graphic debuggers tools for MonoGame when targetting openGL. 
+
+### Switch to WindowsDX
+
+To switch _DungeonSlime_ to target WindowsDX, you need to modify the `.csproj` file, and make some changes to the `.mgcb` content file. 
+First, in the `.csproj` file, remove the reference to MonoGame's openGL backend,
+```xml
+<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+```
+
+And replace it with this line, 
+```xml
+<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
+```
+
+The [`MonoGame.Framework.WindowsDX`](https://www.nuget.org/packages/MonoGame.Framework.WindowsDX) Nuget package is not available for the `net8.0` framework. Instead, it is only available specifically on the Windows variant, called `net8.0-windows7.0`. Change the `<TargetFramework>` in your `.csproj` to the new framework,
+```xml
+<TargetFramework>net8.0-windows7.0</TargetFramework>
+```
+
+Next, the `Content.mgcb` file, update the target platfrom from `DesktopGL` to `Windows`, 
+```
+/platform:Windows
+```
+
+And finally, RenderDoc only works when MonoGame is targeting the `HiDef` graphics profile. This needs to be changed in two locations. First, in the `.mgcb` file, change the `/profile` from `Reach` to `HiDef`. 
+```
+/profile:HiDef
+```
+
+Then, in the `Core` constructor, set the graphics profile immediately after constructing the `Graphics` instance.
+```csharp
+// Create a new graphics device manager.
+Graphics = new GraphicsDeviceManager(this);
+Graphics.GraphicsProfile = GraphicsProfile.HiDef;
+```
+
+### Using RenderDoc
+
+Make sure you have built _DungeonSlime_. You can build it manually by running the following command from the _DungeonSlime_ directory,
+```sh
+dotnet build
+```
+
+Once you have downloaded [RenderDoc](https://renderdoc.org/), open it. Go to the _Launch Application_ tab, and select your built executable for the _Executable Path_. For example, the path may look similar to the following, 
+
+```sh
+C:\proj\MonoGame.Samples\Tutorials\2dShaders\src\04-Debug-UI\DungeonSlime\bin\Debug\net8.0-windows7.0\DungeonSlime.exe
+```
+
+![Figure 4.4: The setup for RenderDoc](./images/renderdoc_setup.png)
+
+Then, click the _Launch_ button in the lower right. _DungeonSlime_ should launch with a small warning text in the upper left of the game window that states the graphics API is being captured by RenderDoc. 
+
+Press `F12` to capture a frame, and it will appear in RenderDoc. Double click the frame to open the captured frame, and go to the _Texture Viewer_ tab. The draw calls are split out one by one and you can view the intermediate buffers. 
+
+![Figure 4.5: RenderDoc shows the intermediate frame](./gifs/renderdoc_tex.gif)
+
+RenderDoc is a powerful tool. To learn more about how to use the tool, please refer to the [RenderDoc Documentation](https://renderdoc.org/docs/index.html).
 
 ## Conclusion
 
+What a difference a good tool makes! In this chapter, you accomplished the following:
 
+- Integrated the `ImGui.NET` library into a MonoGame project.
+- Created a reusable `ImGuiRenderer` to draw the UI.
+- Built a dynamic debug window for our `Material` class.
+- Learned how to use a graphics debugger like RenderDoc to inspect the frame.
 
-In this chapter you accomplished the following:
-- learned how to include `IMGui.NET` in your MonoGame project
-- created a debug UI for managing shader parameters 
+With our workflow and tooling in place, it's finally time to write some new shaders. Up next, we'll dive into our first major pixel shader effect and build a classic screen wipe transition! 

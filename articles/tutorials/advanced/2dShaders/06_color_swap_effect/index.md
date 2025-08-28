@@ -1,4 +1,6 @@
-In the last chapter, you created a scene transition effect. In this chapter, you will create a color swapping effect that allows the game's color pallet to be changed dynamically at runtime!
+The art in our game looks good, but what if we wanted to change the color palette on the fly? Or make the player flash a different color when they pick something up? Re-drawing all the art for every possible color combination would be a lot of work. Thankfully, we can use a shader to do this dynamically!
+
+In this chapter, we'll create a powerful color-swapping effect. We'll learn about a common and flexible technique that uses a texture as a Look-Up Table (LUT) to map original colors to new ones. This will give us precise control over the look and feel of our game's sprites.
 
 
 ## The Basic Color Swap Effect
@@ -591,4 +593,11 @@ Color LUTs are used in post-processing to adjust the final look and feel of game
 
 ## Conclusion
 
-TODO
+That was a really powerful technique! In this chapter, you accomplished the following:
+
+- Implemented a color-swapping system using a 1D texture as a Look-Up Table (LUT).
+- Created a `RedColorMap` class to dynamically generate these LUTs from C# code.
+- Used `SpriteSortMode.Immediate` to apply different materials to different sprites in the same frame.
+- Combined the color swap and grayscale effects into a single, more versatile shader.
+
+So far, all of our work has been in the pixel shader, which is all about changing the color of pixels. In the next chapter, we'll switch gears and explore the vertex shader to manipulate the geometry of our sprites and add some surprising 3D flair to our 2D game.

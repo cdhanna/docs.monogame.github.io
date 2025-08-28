@@ -1,8 +1,10 @@
-In the last chapter, you spent a lot of time in the _pixel_ shader function. In this chapter, we will explore _vertex_ shader functions. To learn about vertex shaders, we will create a 3d effect that will add depth and juice to the game. The goal will be to have the dungeon tile map bend in a subtle 3d way as the player moves on it. 
+Every shader has two main parts: the pixel shader, which we've been using to change the colors of our sprites, and the vertex shader. The vertex shader runs first, and its job is to determine the final shape and position of our geometry. Up until now, we've been using MonoGame's default vertex shader, which just draws our sprites as flat 2D rectangles.
+
+In this chapter, we're going to unlock the power of the vertex shader. We'll write our own custom vertex shader from scratch, which will allow us to break out of the 2D plane. We'll learn how to use a perspective projection to give our flat world a cool, dynamic 3D feel. 
 
 ## Default Vertex Shader
 
-So far in this series, we have only dealt with pixel shaders. To recap, the job of a pixel shader is to convert some input `(u,v)` coordinate into an output color `(r,g,b,a)` value. There has been a second shader function running all along behind the scenes, called the vertex shader. The vertex shader runs _before_ the vertex shader. The job of the vertex shader is to convert world-space vertex data into clip-space vertex data. Technically every call in MonoGame that draws data to the screen must provide a vertex shader function and a pixel shader function. However, the `SpriteBatch` class has a default implementation of the vertex shader that runs automatically.
+So far in this series, we have only dealt with pixel shaders. To recap, the job of a pixel shader is to convert some input `(u,v)` coordinate into an output color `(r,g,b,a)` value. There has been a second shader function running all along behind the scenes, called the vertex shader. The vertex shader runs _before_ the pixel shader. The job of the vertex shader is to convert world-space vertex data into clip-space vertex data. Technically every call in MonoGame that draws data to the screen must provide a vertex shader function and a pixel shader function. However, the `SpriteBatch` class has a default implementation of the vertex shader that runs automatically.
 
 The default `SpriteBatch` vertex shader takes the vertices that make up the sprites' corners, and applies an _orthographic projection_ to the vertices. The orthographic projection creates a 2d effect where shapes have no perspective, even when they are closer or further away from the origin. 
 
@@ -784,4 +786,12 @@ And to finish this chapter, the game looks like this,
 
 ## Conclusion
 
-TODO
+Our game has a whole new dimension! In this chapter, you accomplished the following:
+
+- Learned the difference between a vertex shader and a pixel shader.
+- Wrote a custom vertex shader to override the `SpriteBatch` default.
+- Replaced the default orthographic projection with a perspective projection to create a 3D effect.
+- Refactored shader logic into modular `.fxh` header files for better organization.
+- Combined vertex and pixel shader effects into a single "uber shader".
+
+The world feels much more alive now that it tilts and moves with the player. In the next chapter, we'll build on this sense of depth by tackling a 2D dynamic lighting system.

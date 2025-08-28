@@ -1,4 +1,6 @@
-In the previous chapter, you set up a _hot-reload_ system that allows you to edit shader code without needing to restart the game. In this chapter, we will add a utility class around the basic MonoGame `Effect` class. So far there is only single `_grayscaleEffect` instance of a shader, but similar to how the `Sprite` class was useful to manage multiple properties regarding sprites in the game, we'll need a class to manage shader properties as we introduce more and more shader complexity. 
+Our hot-reload system is working, which is great! 
+
+In this chapter, we will create a small wrapper class, called the `Material`, that will handle shader parameters, hot-reload, and serve as a baseline for future additions.
 
 ## The Material Class
 
@@ -63,7 +65,7 @@ When checking if the asset needs to be reloaded for hot-reload, use the `.Asset`
 _grayscaleEffect.Asset.TryRefresh(out _);
 ```
 
-And in the `Draw()` method, use the `.Efffect` shortcut property,
+And in the `Draw()` method, use the `.Effect` shortcut property,
 ```csharp
 // We are in a game over state, so apply the saturation parameter.  
 _grayscaleEffect.Effect.Parameters["Saturation"].SetValue(_saturation);  
@@ -74,7 +76,7 @@ Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscale
 
 ### Setting Shader Parameters
 
-You already saw how to set a shader property by using the `Satuation` value in the `_grayscaleEffect` shader. However, as you develop shaders in MonoGame, you will eventually _accidentally_ try to set a shader property that doesn't exist in your shader. When this happens, the code will throw a `NullReferenceException` rather than fail silently. For example, if you tried to add this line of the code to the `Update` loop, 
+You already saw how to set a shader property by using the `Saturation` value in the `_grayscaleEffect` shader. However, as you develop shaders in MonoGame, you will eventually _accidentally_ try to set a shader property that doesn't exist in your shader. When this happens, the code will throw a `NullReferenceException` rather than fail silently. For example, if you tried to add this line of the code to the `Update` loop, 
 
 ```csharp
 _grayscaleEffect.Effect.Parameters["DoesNotExist"].SetValue(0);
@@ -330,8 +332,11 @@ switch (oldParam.ParameterClass)
 
 ## Conclusion
 
-In this chapter, you accomplished the following:
-- You created a `Material` class that encapsulates some common shader runtime concepts.
-- You solved the `NullReferenceException` that appears when trying to set a shader parameter that was optimized away by the shader compiler.
-- You solved the blank shader parameter issue when shaders hot-reload.
-- You added support for basic shader parameter types.
+Excellent work! Our new `Material` class makes working with shaders much safer and more convenient. In this chapter, you accomplished the following:
+
+- Created a `Material` class to encapsulate shader effects and their parameters.
+- Solved the `NullReferenceException` that can happen when the compiler optimizes away unused parameters.
+- Handled the state of shader parameters so they are automatically reapplied during a hot-reload.
+- Added support for multiple parameter types like `Matrix`, `Vector2`, and `Texture2D`.
+
+Now that we have a solid and safe foundation for our effects, let's make them easier to tweak. In the next chapter, we'll build a real-time debug UI that will let us change our shader parameters with sliders and buttons right inside the game!

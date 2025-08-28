@@ -1,7 +1,11 @@
+---
+title: "Chapter 02: Hot Reload"
+description: "Setup workflows to reload shaders without restarting the game"
+---
 
-In order to succeed writing shaders, it is important to have a workflow that facilitates iteration and speed. In this chapter, we are going to set up a _hot-reload_ system for our shaders. Our goal is to be able to edit shaders programs in real time, and see the `Effect` update dynamically in the game without needing to restart the game. The _hot-reload_ system can be split into a few parts,
-1. recompiling the shader when we edit it
-2. reloading the shader into the game
+Before we can dive in and start writing shader effects, we should first take a moment to make focus on our development environment.
+
+In this chapter, we will build a "hot-reload" system that will automatically detect changes to our shader files, recompile them, and load them into our running game on the fly. This is a huge time-saver that will let us iterate and experiment with our visual effects much more quickly. Let's get started!
 
 ## Compiling Shaders
 
@@ -438,21 +442,11 @@ _grayscaleEffect.TryRefresh(out _);
 
 ## Conclusion
 
-In this chapter, you accomplished the following:
+And with that, we have a powerful hot-reload system in place! In this chapter, you accomplished the following:
 
-- You created a custom `<Target>` to re-build and copy your MonoGame content files during runtime
-- You used `dotnet watch` to re-build your content
-- You wrote a C# wrapper around `ContentManager` to reload assets when their files update
-- You updated the `_grayscaleEffect` to use the new system
+- Configured `dotnet watch` to monitor your `.fx` shader files.
+- Created a custom MSBuild `<Target>` to automatically recompile and copy your built shaders.
+- Wrote a C# wrapper class, `WatchedAsset<T>`, to track asset file changes.
+- Extended `ContentManager` with a `TryRefresh` method to load new assets into the running game.
 
-In the next chapter, we will continue setting up the development workflow for creating shaders in MonoGame
-
-> [!Tip]
-> Don't forget to _start_ the reload system by running `dotnet built -t:WatchContent` as you start each work session.
-## Test Your Knowledge
-
-1. During the MonoGame content pipeline workflow, assets are compiled and then copied to the project output folder.  What is responsible for performing this task?
-
-    :::question-answer
-    The *MonoGame.Content.Builder.Tasks* NuGet reference.
-    :::
+This new workflow is going to make the rest of our journey much more fun and productive. In the next chapter, we'll build on this foundation by creating a `Material` class to help us organize and safely interact with our shaders.
