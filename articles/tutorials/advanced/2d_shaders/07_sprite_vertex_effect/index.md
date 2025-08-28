@@ -67,8 +67,10 @@ The vertex shader declares a semantic for each input using the `:` syntax.
 float4 position	: POSITION0,
 ```
 
->[!warning] You cannot change the `SpriteBatch` vertex shader
->The `SpriteBatch` class does not offer any way to change the vertex semantics that are passed to the shader function.   
+>[!warning] 
+> You cannot change the `SpriteBatch` vertex shader. 
+> 
+> The `SpriteBatch` class does not offer any way to change the vertex semantics that are passed to the shader function.   
 
 ### Output Semantics
 
@@ -133,7 +135,9 @@ Now that you understand the default vertex shader being used by `SpriteBatch`, w
 
 To experiment with this, create a new Sprite Effect called `3dEffect` in the _MonoGameLibrary_'s shared content effects folder. We need to add a vertex shader function. To do that, we need a new `struct` that holds all the input semantics passed from `SpriteBatch`. 
 
-> [!tip] Use a struct for inputs and outputs
+> [!tip] 
+> Use a struct for inputs and outputs.
+> 
 > The default vertex shader accepts all 3 inputs (`position`, `color`, and `texCoord`) as direct parameters. However, when you have more than 1 semantic, it is helpful to organize all of the inputs in a `struct`. 
 
 ```hlsl
@@ -265,7 +269,9 @@ To check, try modify the shader code to adjust the `z` value based on one of the
 pos.z -= DebugOffset.x;
 ```
 
-> [!tip] Near and Far plane clipping
+> [!tip] 
+> Near and Far plane clipping.
+> 
 > Keep in mind that if you modify the `z` value _too_ much, it will likely step outside of the near and far planes of the orthographic projection matrix. If this happens, the sprite will vanish, because it the projection matrix doesn't handle coordinates outside of the near and far planes. In the example above, they were defined as `0` and `-1`. 
 > ```csharp
 > zNearPlane: 0, zFarPlane: -1,
@@ -441,7 +447,9 @@ To solve this problem, we will collapse our shaders into a single shader that do
 
 MonoGame shaders can reference code from multiple files by using the `#include` syntax. MonoGame itself [uses](https://github.com/MonoGame/MonoGame/blob/develop/MonoGame.Framework/Platform/Graphics/Effect/Resources/SpriteEffect.fx#L8) this technique itself in the default vertex shader for `SpriteBatch`. We can move some of the code from our existing `.fx` files into a _new_ `.fxh` file, re-write the existing shaders to `#include` the new `.fxh` file, and then be able to write additional `.fx` files that `#include` multiple of our files and compose the functions into a single effect. 
 
-> [!tip] `.fxh` vs `.fx`
+> [!tip] 
+> `.fxh` vs `.fx`.
+> 
 > `.fxh` is purely convention. Technically you can use whatever file extension you want, but `.fxh` implies the usage of the file is for shared code, and does not contain a standalone effect itself. The `h` references `header`. 
 
 Before we get started, we are going to be editing `.fxh` files, so it would be nice if the hot-reload system also listened to these `.fxh` file changes. Update the `Watch` configuration in the `DungeonSlime.csproj` file to include the `.fxh` file type.
@@ -480,8 +488,10 @@ struct VertexShaderOutput
 #endif
 ```
 
->[!tip] Include Guards
->The `#include` syntax is taking the referenced file and inserting it into the code. If the same file was included twice, then the contents that file would be written out as code _twice_. Defining a `struct` or function this way would cause the compiler to fail, because the `struct` would be declared twice, which is illegal. To work around this, _a_ solution is to use a practice called "include guards", where the file itself defines a symbol (in the case above, the symbol is `COMMON`). The file only compiles to anything if the symbol has not yet been defined. The `#ifndef` stands for "if not yet defined". Once the `COMMON` symbol is defined once, any future inclusions of the file won't match the `#ifndef` clause. 
+>[!tip] 
+> Include Guards.
+> 
+> The `#include` syntax is taking the referenced file and inserting it into the code. If the same file was included twice, then the contents that file would be written out as code _twice_. Defining a `struct` or function this way would cause the compiler to fail, because the `struct` would be declared twice, which is illegal. To work around this, _a_ solution is to use a practice called "include guards", where the file itself defines a symbol (in the case above, the symbol is `COMMON`). The file only compiles to anything if the symbol has not yet been defined. The `#ifndef` stands for "if not yet defined". Once the `COMMON` symbol is defined once, any future inclusions of the file won't match the `#ifndef` clause. 
 
 Then, in the `3dEffect.fx` file, remove the `VertexShaderInput` and `VertexShaderOutput` structs and replace them with this line,
 ```hlsl

@@ -355,7 +355,7 @@ Then, click the _Launch_ button in the lower right. _DungeonSlime_ should launch
 
 Press `F12` to capture a frame, and it will appear in RenderDoc. Double click the frame to open the captured frame, and go to the _Texture Viewer_ tab. The draw calls are split out one by one and you can view the intermediate buffers. 
 
-![Figure 4.5: RenderDoc shows the intermediate frame](./gifs/renderdoc_tex.gif)
+![Figure 4.5: RenderDoc shows the intermediate frame](gifs/renderdoc_tex.gif)
 
 RenderDoc is a powerful tool. To learn more about how to use the tool, please refer to the [RenderDoc Documentation](https://renderdoc.org/docs/index.html).
 

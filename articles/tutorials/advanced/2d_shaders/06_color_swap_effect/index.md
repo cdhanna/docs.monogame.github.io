@@ -64,7 +64,9 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 
 ![Figure 6.1: Confirm the shader is being used](./images/test.png)
 
-> [!warning] The menu won't use the color swapper
+> [!warning] 
+> The menu won't use the color swapper.
+> 
 > The game's menu is being drawn with GUM, and we aren't configuring any shaders on the GUM menu yet. For now, it will continue to draw with its old colors. 
 
 For debugging purposes, we will disable the game's update logic so the player and bat aren't moving. This will let us focus on developing the look of the shader without getting distracted by the movement and game logic of game-over menus and score. 
@@ -199,7 +201,9 @@ By default, when a sampler reads data from a texture in a shader, it will subtly
 
 When a sampler is reading a texture, there is always some _location_ being used to read pixel data from. The texture coordinate space is from 0 to 1, in both the `u` and `v` axes. By default, if a value greater than 1, or less than 0 is given, the sampler will _wrap_ the value around to be within the range 0 to 1. For example, `1.15` would become `0.15`.  The `Clamp` value prevents the wrapping and cuts the input off at the min and max values. For example, `1.15` becomes `1.0`. 
 
-> [!tip] More information on Samplers
+> [!tip] 
+> More information on Samplers.
+> 
 > The [MonoGame Docs](https://docs.monogame.net/articles/getting_to_know/whatis/graphics/WhatIs_Sampler.html) have more details on samplers. 
 
 The shader function can now do 2 steps to perform the color swap,
@@ -540,7 +544,9 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 }
 ```
 
-> [!warning] Function Order Matters!
+> [!warning] 
+> Function Order Matters!
+> 
 > Make sure that the `Grayscale` and `SwapColors` functions appear _before_ the `MainPS` function in the shader, otherwise the compiler won't be able to resolve the functions.
 
 Now you can control the saturation manually with the debug slider,

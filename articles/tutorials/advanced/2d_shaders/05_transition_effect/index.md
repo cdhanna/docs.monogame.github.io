@@ -1,3 +1,8 @@
+---
+title: "Chapter 05: Transition Effect"
+description: "Create an effect for transitioning between scenes"
+---
+
 Our game is functional, but the jump from the title screen to the game is very sudden. We can make it feel much more polished with a smooth transition instead of an instant cut.
 
 In this chapter, we'll dive into our first major pixel shader effect: a classic screen wipe! We'll learn how to control an effect over the whole screen, how to create soft edges, and how to use textures to drive our shader logic to create all sorts of interesting patterns. 
@@ -142,7 +147,9 @@ If we are making a screen wipe, then parts of the screen will be transitioning b
 
 The shader actually provides the x-coordinate of each pixel in the `input.TextureCoordinates` structure. 
 
->[!tip] `input.TextureCoordinates` is not _actually_ the pixel coordinate
+>[!TIP] 
+> `input.TextureCoordinates` are not _actually_ the pixel coordinates
+> 
 > In this example, the `input.TextureCoordinates` represents pixel coordinates _because_ the sprite is being drawn as a full screen quad. However, if the sprite was not taking up the entire screen, the texture coordinates would behalf differently. This topic will be discussed more later on.
 
 The following shader helps visualize the x-coordinate of each pixel. 
@@ -172,8 +179,10 @@ float2 uv = input.TextureCoordinates;
 return float4(uv.x, uv.y, 0, 1);
 ```
 
->[!tip] Remember that MonoGame uses the top of the image for y=0
->Other game engines treat the _bottom_ of the image as y=0, but MonoGame uses the top of the image for where y is 0. 
+>[!TIP] 
+> Remember that MonoGame uses the top of the image for y=0. 
+> 
+> Other game engines treat the _bottom_ of the image as y=0, but MonoGame uses the top of the image for where y is 0. 
 
 ![Figure 5.6: x and y coordinates in the red and green channels](./images/xy-pos.png)
 
@@ -234,8 +243,10 @@ After we find an `EdgeWidth` value that looks good, we can set it in C# after th
 SceneTransitionMaterial.SetParameter("EdgeWidth", .05f);
 ```
 
->[!warning] Shader parameters do not use initializer expressions
-> if you set a default expression for a shader parameter, like setting `EdgeWidth=.05`, MonoGame's shader compiler ignores the `=.05` part. You will always need to set this value from C#.  
+>[!warning] 
+> Shader parameters do not use initializer expressions.
+>
+> If you set a default expression for a shader parameter, like setting `EdgeWidth=.05`, MonoGame's shader compiler ignores the `=.05` part. You will always need to set this value from C#.  
 
 ### More Interesting Wipes
 

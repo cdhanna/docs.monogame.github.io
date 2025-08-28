@@ -38,7 +38,9 @@ To build some intuition, we will start by considering a shadow caster that is a 
 
 The shape we need to draw is the non-regular quadrilateral defined by `A`, `a`, `b`, and `B`. It is shaded in pink. These points are in world space. Given that we know where the line segment is, we know where `A` and `B` are, but we don't _yet_ know `a` and `b`'s location.
 
-> [!note] `A` and `a` naming convention
+> [!note] 
+> `A` and `a` naming convention.
+> 
 > The `A` and `a` points lay on the same ray from the light starting at `L`. The uppercase `A` denotes that the position is _first_ from the light's point of view. The same pattern holds for `B` and `b`. 
 
 However, the `SpriteBatch` usually only renders rectangular shapes. Naively, it appears `SpriteBatch` cannot help us draw these sorts of shapes, but fortunately, since the shadow hull has exactly _4_ vertices, and `SpriteBatch` draws quads with exactly _4_ vertices, we can use a custom vertex function. 
@@ -248,7 +250,9 @@ public void DrawShadowBuffer(List<ShadowCaster> shadowCasters)
 }
 ```
 
-> [!warning] The `(B-A)` vector isn't being packed yet into the color channel
+> [!warning] 
+> 
+> The `(B-A)` vector isn't being packed yet into the color channel.
 > We will come back to that soon!
 
 Next, create a second method that will call the `DrawShadowBuffer` function for a list of lights and shadow casters, 
