@@ -142,7 +142,7 @@ And here they are written out,
 3. white - `rgb(255, 255, 255)`
 4. light gray-blue - `rgb(214, 225, 233)`
 
-Our goal is to treat those colors as `keys` into a table that results in a final color `value`. Fortunately, all of the `red` channels are unique across all 4 input colors. The `red` channel are `32`, `115`, `255`, and `214`. 
+Our goal is to treat those colors as `keys` into a table that results in a final color `value`. Fortunately, all of the `red` channels are unique across all 4 input colors. The `red` channels are `32`, `115`, `255`, and `214`. 
 
 As a demonstration, if we were using C# to create a table, it might look like this,
 

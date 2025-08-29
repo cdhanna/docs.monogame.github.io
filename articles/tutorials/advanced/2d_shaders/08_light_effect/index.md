@@ -67,7 +67,7 @@ public class DeferredRenderer
 }
 ```
 
-The `ColorBuffer` property is a `RenderTarget2D`, which is a special of type of `Texture2D` that MonoGame can draw into. In order for MonoGame to draw anything into the `ColorBuffer`, it needs to be bound as the current render target. Add the following function to the `DeferredRenderer` class. The `SetRenderTarget()` function instructs all future MonoGame draw operations to render into the `ColorBuffer`. 
+The `ColorBuffer` property is a `RenderTarget2D`, which is a special type of `Texture2D` that MonoGame can draw into. In order for MonoGame to draw anything into the `ColorBuffer`, it needs to be bound as the current render target. Add the following function to the `DeferredRenderer` class. The `SetRenderTarget()` function instructs all future MonoGame draw operations to render into the `ColorBuffer`. 
 
 ```csharp
 public void StartColorPhase()  
@@ -365,7 +365,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 }
 ```
 
-For the sake of these clarity, these screenshots show only the `LightBuffer` as full screen. Here, we can see the distance based return value.
+For the sake of clarity, these screenshots show only the `LightBuffer` as full screen. Here, we can see the distance based return value.
 ![Figure 8.4: Showing the distance from the center of the light in the red channel](./images/point-light-dist.png)
 
 That starts to look like a light, but in reverse. Create a new variable, `falloff` which inverts the distance. The `saturate` function is shorthand for clamping the value between `0` and `1`. 

@@ -415,7 +415,7 @@ Core.SpriteBatch.Begin(
     effect: _3dMaterial.Effect);
 ```
 
-And voila, the text no longer disappears on its flip side. 
+And voilà, the text no longer disappears on its flip side. 
 
 ![Figure 7.4: A spinning text with reverse sides](./gifs/spin-2.gif)
 

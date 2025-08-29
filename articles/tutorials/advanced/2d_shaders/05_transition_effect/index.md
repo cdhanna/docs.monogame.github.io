@@ -152,7 +152,7 @@ The shader actually provides the x-coordinate of each pixel in the `input.Textur
 >[!TIP] 
 > `input.TextureCoordinates` are not _actually_ the pixel coordinates
 > 
-> In this example, the `input.TextureCoordinates` represents pixel coordinates _because_ the sprite is being drawn as a full screen quad. However, if the sprite was not taking up the entire screen, the texture coordinates would behalf differently. This topic will be discussed more later on.
+> In this example, the `input.TextureCoordinates` represents pixel coordinates _because_ the sprite is being drawn as a full screen quad. However, if the sprite was not taking up the entire screen, the texture coordinates would behave differently. This topic will be discussed more later on.
 
 The following shader helps visualize the x-coordinate of each pixel. 
 ```hsls
@@ -213,7 +213,7 @@ return float4(0, 0, 0, transitioned);
 
 ![Figure 5.8: A transparent screen wipe](./gifs/transparent-x.gif)
 
-The transition works, but the edge between black and transparent is hard. Often in screen wipes, the transition has a smooth edge. The reason the current shader has a hard edge is because the `transitioned` variable is either `0` to `1` depending on the outcome of the `Progress > uv.x;` expression. 
+The transition works, but the edge between black and transparent is hard. Often in screen wipes, the transition has a smooth edge. The reason the current shader has a hard edge is because the `transitioned` variable is either `0` or `1` depending on the outcome of the `Progress > uv.x;` expression. 
 Ideally, it would be nice to set the `transitioned` variable to `0` when the `Progress` is some small number like `.05`, to `1` when the `Progress` is `.1`, and smoothly interpolate from `0` to `1` between the range. That way, the hard cut-off would replaced by a smoother edge. 
 
 We could write this by hand, but shader languages have a built in function called `smoothstep` which does essentially what we want. The `smoothstep` function takes 3 parameters, a `min`, a `max`, and an input variable often called `x` (or `t` depending on who you ask). 
@@ -292,7 +292,7 @@ You could imagine _other_ grayscale gradient images. In fact, there is a fantast
 
 ![Figure 5.16: A sample gradient texture](./images/assets/radial.png)
 
-Theoretically, it is possible to derive mathematical expressions that would result in those exact grayscale gradient images, but given that we have the images all ready, we could just change the transition shader to _read_ from the texture given the pixel's coordinate. 
+Theoretically, it is possible to derive mathematical expressions that would result in those exact grayscale gradient images, but given that we have the images already, we could just change the transition shader to _read_ from the texture given the pixel's coordinate. 
 
 Download those files and add them to your MonoGame content.
 

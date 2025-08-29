@@ -3,7 +3,7 @@ title: "Chapter 04: Debug UI"
 description: "Add ImGui.NET to the project for debug visualization"
 ---
 
-So far, any time we need to adjust a shader's parameter values, we need to edit C# code and recompile. It would be much faster to have a debug UI in the game itself that exposed all of the shader parameters as editable text fields and slider widgets. We can also use the sliders to change a shader's input parameter, and visualize the difference in realtime, which is a fantastic way to build intuition about our shader code. 
+So far, any time we need to adjust a shader's parameter values, we need to edit C# code and recompile. It would be much faster to have a debug UI in the game itself that expose all of the shader parameters as editable text fields and slider widgets. We can also use the sliders to change a shader's input parameter, and visualize the difference in realtime, which is a fantastic way to build intuition about our shader code. 
 
 In this chapter, we will add a popular library called ImGui.NET to create a developer-facing debug UI for our materials. Let's get it set up. 
 
@@ -213,7 +213,7 @@ Now, when you run the game, you can enable the `"Override Values"` checkbox to b
 
 ### Turning it off
 
-As the number of shaders and `Material` instances grows through out the rest of the tutorial series, it will become awkward to manage drawing all of the debug UIs manually like the `_grayscaleEffect`'s UI is being drawn. Rather, it would be good to have a single function that would draw all of the debug UIs at once. Naturally, it would not make sense to draw _every_ `Material`'s debug UI, so the `Material` class needs a setting to decide if the debug UI should be drawn or not. 
+As the number of shaders and `Material` instances grows throughout the rest of the tutorial series, it will become awkward to manage drawing all of the debug UIs manually like the `_grayscaleEffect`'s UI is being drawn. Rather, it would be good to have a single function that would draw all of the debug UIs at once. Naturally, it would not make sense to draw _every_ `Material`'s debug UI, so the `Material` class needs a setting to decide if the debug UI should be drawn or not. 
 
 We will keep track of all the `Material` instances to draw as a `static` variable inside the `Material` class itself. 
 
@@ -305,7 +305,7 @@ _grayscaleEffect.IsDebugVisible = true;
 
 ## RenderDoc
 
-The debug UI in the game is helpful, but sometimes you may need to take a closer look at the actual graphics resources _MonoGame_ is managing. There are various tools that intercept the graphics API calls between an application and the graphics software. [_RenderDoc_](https://renderdoc.org/) is a great example of a graphics debugger tool. Unfortunately, it only works with MonoGame when the game is targeting the WindowsDX profile. It may not be possible to switch your game to WindowsDX under all circumstances. At this time, there are very few options for graphic debuggers tools for MonoGame when targetting openGL. 
+The debug UI in the game is helpful, but sometimes you may need to take a closer look at the actual graphics resources _MonoGame_ is managing. There are various tools that intercept the graphics API calls between an application and the graphics software. [_RenderDoc_](https://renderdoc.org/) is a great example of a graphics debugger tool. Unfortunately, it only works with MonoGame when the game is targeting the WindowsDX profile. It may not be possible to switch your game to WindowsDX under all circumstances. At this time, there are very few options for graphic debuggers tools for MonoGame when targeting openGL. 
 
 ### Switch to WindowsDX
 

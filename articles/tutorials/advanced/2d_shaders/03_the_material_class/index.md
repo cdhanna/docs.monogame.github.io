@@ -89,10 +89,10 @@ You'll see this type of `NullReference` error,
 System.NullReferenceException: Object reference not set to an instance of an object.
 ```
 
-> [!Warning]
+> [!Caution]
 > Don't actually add the `DoesNotExist` sample, because it will break your code.
 
-On its own, this wouldn't be too difficult to accept. However, MonoGame's shader compile will aggressively remove properties that aren't actually being _used_ in your shader code. Even if you wrote a shader that had a `DoesNotExist` property, if it wasn't being used to compute the return value of the shader, it will be removed. The compiler is good at optimizing away unused variables. For example, in the `grayscaleEffect.fx` file, change the last few lines of the `MainPS` function to the following,
+On its own, this wouldn't be too difficult to accept. However, MonoGame's shader compiler will aggressively remove properties that aren't actually being _used_ in your shader code. Even if you wrote a shader that had a `DoesNotExist` property, if it wasn't being used to compute the return value of the shader, it will be removed. The compiler is good at optimizing away unused variables. For example, in the `grayscaleEffect.fx` file, change the last few lines of the `MainPS` function to the following,
 ```hlsl
 // overwrite all existing operations and set the final color to white  
 finalColor.rgb = 1;  
@@ -101,9 +101,9 @@ finalColor.rgb = 1;
 return float4(finalColor, color.a);
 ```
 
-If you run the game and enter the `GameScene`, you will see a `NullReferenceException` (and the game will hard-crash). The `Saturation` shader paramater no longer exists in the shader, so when the `Draw()` method tries to _set_ it, the game crashes. 
+If you run the game and enter the `GameScene`, you will see a `NullReferenceException` (and the game will hard-crash). The `Saturation` shader parameter no longer exists in the shader, so when the `Draw()` method tries to _set_ it, the game crashes. 
 
-The aggressive optimization is good for your game's performance, but when combined with the hot-reload system, it will lead to unexpected bugs. As you iterate on shader code, it is very likely that at some point a shader parameter will be optimized out of the compiled shader. The hot-reload system will automatically load the newly compiled shader, and if the C# code attempts to set the previously available parameter, the game may crash.
+The aggressive optimization is good for your game's performance, but when combined with the hot-reload system, it will lead to unexpected bugs. As you iterate on shader code, it is likely that at some point a shader parameter will be optimized out of the compiled shader. The hot-reload system will automatically load the newly compiled shader, and if the C# code attempts to set the previously available parameter, the game may crash.
 
 To solve this problem, the `Material` class can encapsulate setting shader properties and handle the potential error scenario. The `Effect.Parameters` variable is an instance of the  `EffectParameterCollection` class. Here is the class signature and fields. 
 

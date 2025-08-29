@@ -18,7 +18,7 @@ Our snake-like game already has a shader effect and we can use it to validate th
 The existing automatic shader compilation is happening because the `DungeonSlime.csproj` file is referencing the `MonoGame.Content.Builder.Task` Nuget package.
 [!code-xml[](./snippets/DungeonSlime.csproj?highlight=4)]
 
-Nuget packages can add custom build behaviours and the `MonoGame.Content.Builder.Task` package is adding a step to the game's build that runs the MonoGame Content Builder tool. These sorts of build extensions use a conventional `.prop` and `.target` file system. if you are interested, you can learn more about how Nuget packages may extend MSBuild systems on Microsoft's documentation website. For reference, [this](https://github.com/MonoGame/MonoGame/blob/develop/Tools/MonoGame.Content.Builder.Task/MonoGame.Content.Builder.Task.targets#L172) is the `.targets` file for the `MonoGame.Content.Builder.Task`.
+Nuget packages can add custom build behaviours and the `MonoGame.Content.Builder.Task` package is adding a step to the game's build that runs the MonoGame Content Builder tool. These sorts of build extensions use a conventional `.prop` and `.target` file system. If you are interested, you can learn more about how Nuget packages may extend MSBuild systems on Microsoft's documentation website. For reference, [this](https://github.com/MonoGame/MonoGame/blob/develop/Tools/MonoGame.Content.Builder.Task/MonoGame.Content.Builder.Task.targets#L172) is the `.targets` file for the `MonoGame.Content.Builder.Task`.
 
 
 This line defines a new MSBuild step, called `IncludeContent`.

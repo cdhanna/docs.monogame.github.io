@@ -19,7 +19,7 @@ If the slime was casting a shadow, then the position of the light would be a lot
 
 ![9.2: A hand drawn shadow](./images/dbg_light_shadow.png)
 
-The pink section is called the _Shadow hull_. We can split up the entire effect into two distinct stages. 
+The pink section is called the _shadow hull_. We can split up the entire effect into two distinct stages. 
 1. We need a way to calculate and render the shadow hulls from all objects that we want to cast shadows (such as bats and slime segments),
 2. We need a way to _use_ the shadow hull to actually mask the lighting from the previous chapter. 
 
@@ -100,7 +100,7 @@ Additionally, the default `TexCoord` values allow the vertex shader to take any 
 
 The `Color` data is used to tint the resulting sprite in the pixel shader, but in our use case for a shadow hull, we don't really need a color whatsoever. Instead, we can use this `float4` field as arbitrary data. The trick is that we will need to pack whatever data we need into a `float4` and pass it via the `Color` type in MonoGame. This color comes from the `Color` value passed to the `SpriteBatch`'s `Draw()` call. 
 
-The `Position` and `Color` both use `float4` in the standard vertex shader input, and it _may_ appear as though they should have the same about precision. However they are not passed from MonoGame's `SpriteBatch` as the same type. When `SpriteBatch` goes to draw a sprite, it uses a `Color` for the `Color`, and a `Vector3` for the `Position`. A `Color` has 4 `bytes`, but a `Vector3` has 12 `bytes`. This can be seen in the [`VertexPositionColorTexture`](https://github.com/MonoGame/MonoGame/blob/develop/MonoGame.Framework/Graphics/Vertices/VertexPositionColorTexture.cs#L103) class. The takeaway is that we can only pack a third as much data into the `Color` semantic as the `Position` gets, and that may limit the types of values we want to pack into the `Color` value. 
+The `Position` and `Color` both use `float4` in the standard vertex shader input, and it _may_ appear as though they should have the same amout precision. However they are not passed from MonoGame's `SpriteBatch` as the same type. When `SpriteBatch` goes to draw a sprite, it uses a `Color` for the `Color`, and a `Vector3` for the `Position`. A `Color` has 4 `bytes`, but a `Vector3` has 12 `bytes`. This can be seen in the [`VertexPositionColorTexture`](https://github.com/MonoGame/MonoGame/blob/develop/MonoGame.Framework/Graphics/Vertices/VertexPositionColorTexture.cs#L103) class. The takeaway is that we can only pack a third as much data into the `Color` semantic as the `Position` gets, and that may limit the types of values we want to pack into the `Color` value. 
 
 Finally, the light's position must be provided as a shader parameter, `float2 LightPosition`. The light's position should be in the same world-space coordinate system that the light is being drawn at itself. 
 
@@ -747,7 +747,7 @@ LightBuffer = new RenderTarget2D(
     preferredDepthFormat: DepthFormat.Depth24Stencil8);
 ```
 
-The `LightBuffer` itself has `32` bits per pixel of `Color` data, _and_ an additional `32` bits of data split between the depth and stencil buffers. As the name suggests, the `Depth24Stencil8` format grants the depth buffer `24` bits of data, and the stencil buffer `8` bits of data. `8` bits is enough for a single `byte`, which means it can represent integers from `0` to `255`. 
+The `LightBuffer` itself has `32` bits per pixel of `Color` data, _and_ an additional `32` bits of data split between the depth and stencil buffers. As the name suggests, the `Depth24Stencil8` format grants the depth buffer `24` bits of data, and the stencil buffer `8` bits of data. `8` bits are enough for a single `byte`, which means it can represent integers from `0` to `255`. 
 
 For our use case, we will deal with the stencil buffer in two distinct steps. First, all of the shadow hulls will be drawn into the stencil buffer _instead_ of a unique `ShadowBuffer`. Anywhere a shadow hull is drawn, the stencil buffer will have a value of `1`, and anywhere without a shadow hull will have a value of `0`. Then, in the second step, when the point lights are drawn, the stencil buffer can be used as a mask where pixels are only drawn where the stencil buffer has a value of `0` (which means there was no shadow hull present in the previous step). 
 
