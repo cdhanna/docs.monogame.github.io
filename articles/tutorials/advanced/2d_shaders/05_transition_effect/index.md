@@ -155,7 +155,7 @@ The shader actually provides the x-coordinate of each pixel in the `input.Textur
 > In this example, the `input.TextureCoordinates` represents pixel coordinates _because_ the sprite is being drawn as a full screen quad. However, if the sprite was not taking up the entire screen, the texture coordinates would behave differently. This topic will be discussed more later on.
 
 The following shader helps visualize the x-coordinate of each pixel. 
-```hsls
+```hlsl
 float2 uv = input.TextureCoordinates;  
 return float4(uv.x, 0, 0, 1);
 ```
