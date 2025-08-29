@@ -1,6 +1,14 @@
+---
+title: "Chapter 09: Shadow Effect"
+description: "Add dynamic shadows to the game"
+---
+
 Our lighting system is looking great, but the lights don't feel fully grounded in the world. They shine right through the walls, the bat, and even our slime! To truly sell the illusion of light, we need darkness. We need shadows.
 
 In this, our final effects chapter, we're going to implement a dynamic 2D shadow system. The shadows will be drawn with a new vertex shader, and integrated into the point light shader from the previous chapter. After the effect is working, we will port the effect to use a more efficient approach. 
+
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/08-Light-Effect).
+
 ## 2D Shadows
 
 Take a look at the current lighting in _Dungeon Slime_. In this screenshot, there is a single light source. The bat and the slime don't cast shadows, and without these shadows, it is hard to visually identify where the light's position is. 
@@ -1030,3 +1038,7 @@ And with that, our lighting and shadow system is complete! In this chapter, you 
 - Refactored the system to use the Stencil Buffer for masking.
 
 In the final chapter, we'll wrap up the series and discuss some other exciting graphics programming topics you could explore from here.
+
+You can find the complete code sample for this tutorial series, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/09-Shadows-Effect/). 
+
+Continue to the next chapter, [Chapter 10: Next Steps](../10_next_steps/index.md)

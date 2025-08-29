@@ -1,7 +1,13 @@
+---
+title: "Chapter 06: Color Swap Effect"
+description: "Create a shader to change the colors of the game"
+---
+
 The art in our game looks good, but what if we wanted to change the color palette on the fly? Or make the player flash a different color when they pick something up? Re-drawing all the art for every possible color combination would be a lot of work. Thankfully, we can use a shader to do this dynamically!
 
 In this chapter, we'll create a powerful color-swapping effect. We'll learn about a common and flexible technique that uses a texture as a Look-Up Table (LUT) to map original colors to new ones. This will give us precise control over the look and feel of our game's sprites.
 
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/05-Transition-Effect).
 
 ## The Basic Color Swap Effect
 
@@ -607,3 +613,7 @@ That was a really powerful technique! In this chapter, you accomplished the foll
 - Combined the color swap and grayscale effects into a single, more versatile shader.
 
 So far, all of our work has been in the pixel shader, which is all about changing the color of pixels. In the next chapter, we'll switch gears and explore the vertex shader to manipulate the geometry of our sprites and add some surprising 3D flair to our 2D game.
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/06-Color-Swap-Effect). 
+
+Continue to the next chapter, [Chapter 07: Sprite Vertex Effect](../07_sprite_vertex_effect/index.md)

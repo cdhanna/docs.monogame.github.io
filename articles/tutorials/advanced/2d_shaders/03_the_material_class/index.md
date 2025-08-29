@@ -2,6 +2,8 @@ Our hot-reload system is working, which is great!
 
 In this chapter, we will create a small wrapper class, called the `Material`, that will handle shader parameters, hot-reload, and serve as a baseline for future additions.
 
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/02-Hot-Reload-System/).
+
 ## The Material Class
 
 A `Material` represents a compiled `Effect` _and_ the runtime configuration for the `Effect`. For example, the `_grayscaleEffect` shader has a single property called `Saturation`, and the _value_ of that property is essential to the existence of the `_grayscaleEffect`. We will create a class called `Material` that manages all of our shader related metadata. 
@@ -340,3 +342,7 @@ Excellent work! Our new `Material` class makes working with shaders much safer a
 - Added support for multiple parameter types like `Matrix`, `Vector2`, and `Texture2D`.
 
 Now that we have a solid and safe foundation for our effects, let's make them easier to tweak. In the next chapter, we'll build a real-time debug UI that will let us change our shader parameters with sliders and buttons right inside the game!
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/03-The-Material-Class). 
+
+Continue to the next chapter, [Chapter 04: Debug UI](../04_debug_ui/index.md)

@@ -7,6 +7,8 @@ Our game is functional, but the jump from the title screen to the game is very s
 
 In this chapter, we'll dive into our first major pixel shader effect: a classic screen wipe! We'll learn how to control an effect over the whole screen, how to create soft edges, and how to use textures to drive our shader logic to create all sorts of interesting patterns. 
 
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/04-Debug-UI).
+
 
 ## The Scene Transition Effect
 
@@ -519,3 +521,7 @@ Our game is already starting to feel more polished with this new transition effe
 - Refactored shared content into its own content project.
 
 This was our first deep dive into pixel shaders, and we've created a very flexible system. In the next chapter, we'll keep the momentum going by tackling another popular and powerful shader: a color-swapping effect.
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/05-Transition-Effect). 
+
+Continue to the next chapter, [Chapter 06: Color Swap Effect](../06_color_swap_effect/index.md)

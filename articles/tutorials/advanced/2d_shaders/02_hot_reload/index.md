@@ -3,9 +3,11 @@ title: "Chapter 02: Hot Reload"
 description: "Setup workflows to reload shaders without restarting the game"
 ---
 
-Before we can dive in and start writing shader effects, we should first take a moment to make focus on our development environment.
+Before we can dive in and start writing shader effects, we should first take a moment to focus on our development environment.
 
 In this chapter, we will build a "hot-reload" system that will automatically detect changes to our shader files, recompile them, and load them into our running game on the fly. This is a huge time-saver that will let us iterate and experiment with our visual effects much more quickly. Let's get started!
+
+If you're following along with code, here is the code from the end of the previous tutorial series, [Starting Code](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/learn-monogame-2d/src/24-Shaders/) 
 
 ## Compiling Shaders
 
@@ -223,7 +225,7 @@ public static class ContentManagerExtensions
 }
 ```
 
-Now, you can create an extension method for the existing `MonoGame`'s `ContentManager` class, 
+Now, you can create an [extension method](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods) for the existing `MonoGame`'s `ContentManager` class, 
 
 ```csharp
 public static T Watch<T>(this ContentManager manager, string assetName)  
@@ -344,8 +346,8 @@ finalColor *= float3(1, 0, 0);
 ```
 
 This video shows the effect changing.
-![Figure 2-1: The reload system is working ](./videos/shader-reload.mp4)
 
+![Figure 2-1: The reload system is working ](./videos/shader-reload.mp4)
 
 
 ## Final Touches
@@ -450,3 +452,7 @@ And with that, we have a powerful hot-reload system in place! In this chapter, y
 - Extended `ContentManager` with a `TryRefresh` method to load new assets into the running game.
 
 This new workflow is going to make the rest of our journey much more fun and productive. In the next chapter, we'll build on this foundation by creating a `Material` class to help us organize and safely interact with our shaders.
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/02-Hot-Reload-System/). 
+
+Continue to the next chapter, [Chapter 03: The Material Class](../03_the_material_class/index.md)

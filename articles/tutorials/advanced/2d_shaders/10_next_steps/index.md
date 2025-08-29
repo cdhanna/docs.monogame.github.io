@@ -1,3 +1,7 @@
+---
+title: "Chapter 10: Next Steps"
+description: "Review your accomplishments and consider next steps"
+---
 
 Congratulations on making it to the end of the advanced 2D shaders tutorial! We have come an incredibly long way from our starting point. Let's take a moment to look back at everything we've accomplished.
 

@@ -1,7 +1,13 @@
+---
+title: "Chapter 04: Debug UI"
+description: "Add ImGui.NET to the project for debug visualization"
+---
 
 So far, any time we need to adjust a shader's parameter values, we need to edit C# code and recompile. It would be much faster to have a debug UI in the game itself that exposed all of the shader parameters as editable text fields and slider widgets. We can also use the sliders to change a shader's input parameter, and visualize the difference in realtime, which is a fantastic way to build intuition about our shader code. 
 
 In this chapter, we will add a popular library called ImGui.NET to create a developer-facing debug UI for our materials. Let's get it set up. 
+
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/03-The-Material-Class).
 
 ## Adding a Debug UI Library
 
@@ -369,3 +375,7 @@ What a difference a good tool makes! In this chapter, you accomplished the follo
 - Learned how to use a graphics debugger like RenderDoc to inspect the frame.
 
 With our workflow and tooling in place, it's finally time to write some new shaders. Up next, we'll dive into our first major pixel shader effect and build a classic screen wipe transition! 
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/04-Debug-UI). 
+
+Continue to the next chapter, [Chapter 05: Transition Effect](../05_transition_effect/index.md)

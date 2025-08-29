@@ -1,6 +1,13 @@
+---
+title: "Chapter 07: Sprite Vertex Shaders"
+description: "Learn about vertex shaders and how to use them on sprites"
+---
+
 Every shader has two main parts: the pixel shader, which we've been using to change the colors of our sprites, and the vertex shader. The vertex shader runs first, and its job is to determine the final shape and position of our geometry. Up until now, we've been using MonoGame's default vertex shader, which just draws our sprites as flat 2D rectangles.
 
 In this chapter, we're going to unlock the power of the vertex shader. We'll write our own custom vertex shader from scratch, which will allow us to break out of the 2D plane. We'll learn how to use a perspective projection to give our flat world a cool, dynamic 3D feel. 
+
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/06-Color-Swap-Effect).
 
 ## Default Vertex Shader
 
@@ -805,3 +812,7 @@ Our game has a whole new dimension! In this chapter, you accomplished the follow
 - Combined vertex and pixel shader effects into a single "uber shader".
 
 The world feels much more alive now that it tilts and moves with the player. In the next chapter, we'll build on this sense of depth by tackling a 2D dynamic lighting system.
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/07-Sprite-Vertex-Effect). 
+
+Continue to the next chapter, [Chapter 08: Light Effect](../08_light_effect/index.md)

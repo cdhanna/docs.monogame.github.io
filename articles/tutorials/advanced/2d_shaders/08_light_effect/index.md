@@ -1,6 +1,14 @@
+---
+title: "Chapter 08: Light Effect"
+description: "Add dynamic 2d lighting to the game"
+---
+
 Our game is looking more dynamic, but the visuals are still a bit flat. Good lighting is one of the best ways to add atmosphere, depth, and drama to a scene. In this chapter, we're going to tackle a very advanced and powerful topic: a 2D dynamic lighting system.
 
 To do this, we'll learn about a rendering technique called *deferred rendering*. This approach will allow us to draw many lights onto the screen in an efficient way. Let's get started!
+
+If you're following along with code, here is the code from the end of the [previous chapter](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/07-Sprite-Vertex-Effect).
+
 
 ## Deferred Rendering
 
@@ -998,3 +1006,7 @@ In this chapter, you accomplished the following:
 - Wrote a final composite shader to combine all the buffers into the final lit scene.
 
 Our world is so much more atmospheric now, but there's one key ingredient missing... shadows! In our next and final effects chapter, we'll bring our lights to life by making them cast dynamic shadows.
+
+You can find the complete code sample for this chapter, [here](https://github.com/MonoGame/MonoGame.Samples/tree/3.8.4/Tutorials/2dShaders/src/08-Light-Effect). 
+
+Continue to the next chapter, [Chapter 09: Shadows Effect](../09_shadows_effect/index.md)
