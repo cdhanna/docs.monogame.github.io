@@ -29,6 +29,10 @@ There is `unsafe` code in the `ImGui` code, like this snippet, so you will need 
 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 ```
 
+> [!note]
+> Why `unsafe`?
+> The unsafe keyword in C# allows code to work directly with memory addresses (pointers). This is generally discouraged for safety reasons, but it's necessary for high-performance libraries. The `ImGuiRenderer` uses pointers to efficiently send vertex data to the GPU.
+
 In order to play around with the new UI tool, we will set up a simple _Hello World_ UI in the main `GameScene`. As we experiment with `ImGui`, we will build towards a re-usable debug UI for future shaders. To get started, we need to have an instance of `ImGuiRenderer`. Similar to how there is a single `static SpriteBatch` , we will create a single `static ImGuiRenderer` to be re-used throughout the game. 
 
 In the `Core.cs` file, add the following property to the `Core` class.

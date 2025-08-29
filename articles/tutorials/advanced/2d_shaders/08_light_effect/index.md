@@ -672,6 +672,10 @@ public void StartColorPhase()
 }
 ```
 
+> [!note]
+> The _G0Buffer_
+> The `ColorBuffer` and `NormalBuffer` are grouped together and often called the _Geometry-Buffer_ (G-Buffer). In other deferred renderers, there is even more information stored in the G-Buffer as additional textures, such as depth information, material information, or game specific data. 
+
 To visualize the `NormalBuffer`, we will switch back to the `DebugDraw()` method. The `NormalBuffer` will be rendered in the lower-left corner of the screen. 
 ```csharp
 // the debug view for the normal buffer lives in the top-right.  

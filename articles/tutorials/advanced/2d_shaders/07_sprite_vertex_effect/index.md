@@ -398,8 +398,16 @@ VertexShaderOutput MainVS(VertexShaderInput input)
     output.TextureCoordinates = input.TexCoord;
     return output;
 }
-
 ```
+
+> [!note]
+> What does this do, `output.Position /= output.Position.w` ? 
+> Long story short, the `w` component of the `.Position` must be _1_. Dividing any number by itself results in _1_, so the dividing `output.Position` by its own `w` component does two things, 
+>  1. sets the `w` component to _1_, 
+>  2. uniformly adjusts the other components to accomodate the change.
+>     
+> The math to fully explain why this is required is beyond the scope of this tutorial series. Read about [homogenous coordinates](https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/) and the [perspective divide](https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/projection-matrix-GPU-rendering-pipeline-clipping.html)
+
 
 And now when the debug parameter is adjusted, the text spins in a way that was never possible with the default `SpriteBatch` vertex shader.
 

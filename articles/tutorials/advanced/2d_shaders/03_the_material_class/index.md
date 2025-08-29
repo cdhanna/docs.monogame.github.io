@@ -259,7 +259,7 @@ public void Update()
 ```
 
 > [!Tip]
-> Adding the `[Conditional]` attribute is optional. It won't seriously impact your game's performance one way or another. 
+> Adding the [`[Conditional]`](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.conditionalattribute?view=net-9.0) attribute is optional. It won't seriously impact your game's performance one way or another.
 
 ### Supporting more Parameter Types
 

@@ -18,7 +18,7 @@ Our snake-like game already has a shader effect and we can use it to validate th
 The existing automatic shader compilation is happening because the `DungeonSlime.csproj` file is referencing the `MonoGame.Content.Builder.Task` Nuget package.
 [!code-xml[](./snippets/DungeonSlime.csproj?highlight=4)]
 
-Nuget packages can add custom build behaviours and the `MonoGame.Content.Builder.Task` package is adding a step to the game's build that runs the MonoGame Content Builder tool. These sorts of build extensions use a conventional `.prop` and `.target` file system. If you are interested, you can learn more about how Nuget packages may extend MSBuild systems on Microsoft's documentation website. For reference, [this](https://github.com/MonoGame/MonoGame/blob/develop/Tools/MonoGame.Content.Builder.Task/MonoGame.Content.Builder.Task.targets#L172) is the `.targets` file for the `MonoGame.Content.Builder.Task`.
+Nuget packages can add custom build behaviours and the `MonoGame.Content.Builder.Task` package is adding a step to the game's build that runs the MonoGame Content Builder tool. These sorts of build extensions use a conventional `.prop` and `.target` file system. If you are interested, you can learn more about how Nuget packages may extend MSBuild systems on Microsoft's [documentation website](https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild?view=vs-2022). For reference, [this](https://github.com/MonoGame/MonoGame/blob/develop/Tools/MonoGame.Content.Builder.Task/MonoGame.Content.Builder.Task.targets#L172) is the `.targets` file for the `MonoGame.Content.Builder.Task`.
 
 
 This line defines a new MSBuild step, called `IncludeContent`.
@@ -44,7 +44,7 @@ You should see log output indicating that the content for the _DungeonSlime_ gam
 
 ### Dotnet Watch
 
-There is a tool called `dotnet watch` that comes with the standard installation of `dotnet`. Normally, `dotnet watch` is used to watch for changes to `.cs` code files, recompile, and reload those changes into a program without restarting the program. You can try out `dotnet watch`'s normal behaviour by opening VSCode's embedded terminal to the _DungeonSlime_ project, and running the following command. The game should start normally.
+There is a tool called [`dotnet watch`](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-watch) that comes with the standard installation of `dotnet`. Normally, `dotnet watch` is used to watch for changes to `.cs` code files, recompile, and reload those changes into a program without restarting the program. You can try out `dotnet watch`'s normal behaviour by opening VSCode's embedded terminal to the _DungeonSlime_ project, and running the following command. The game should start normally.
 
 ```sh
 dotnet watch

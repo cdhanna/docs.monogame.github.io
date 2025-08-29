@@ -576,7 +576,11 @@ if (alignment < 0){
 }
 ```
 
-And then in the pixel shader function, add this line to the top. The `clip` function will completely discard the fragment and not draw anything to the `ShadowBuffer`. 
+> [!tip]
+> This technique is called [back-face culling](https://en.wikipedia.org/wiki/Back-face_culling).
+
+
+And then in the pixel shader function, add this line to the top. The [`clip`](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-clip) function will completely discard the fragment and not draw anything to the `ShadowBuffer`. 
 ```hlsl
 clip(input.Color.a);
 ```
@@ -946,6 +950,11 @@ _shadowBlendState = new BlendState
     ColorWriteChannels = ColorWriteChannels.None  
 };
 ```
+
+> ![tip]
+> 
+> Setting the `ColorWriteChannels` to `.None` means that the GPU still rasterizes the geometry, but no color will be written to the `LightBuffer`.
+
 
 Finally, pas it to the shadow hull `SpriteBatch` call.
 ```csharp

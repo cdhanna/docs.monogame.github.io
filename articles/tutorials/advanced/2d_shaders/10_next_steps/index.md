@@ -30,6 +30,7 @@ In this tutorial, we worked within the confines of the default `SpriteBatch` ver
 
 This tutorial series was an exploration of various shader topics, with a focus on MonoGame's tooling. As you continue to develop new effects and shaders for your games, you will undoubtedly need to research far and wide on the internet for help. Graphics code can be notoriously hard. Here are a few resources that may help you. 
 
+- [HLSL Intrinsic](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-intrinsic-functions) lists out the functions you can use in HLSL.
 - [The Book Of Shaders](https://thebookofshaders.com/) goes from shader fundamentals to building complicated effects. It has live code editors in the browser so you can tweak the shader and see the result right away!
 - [Shadertoy](https://www.shadertoy.com/) is an online shader editor with a live preview in the browser. It also functions as a vibrant library of cool effects and techniques you can learn from. Often, if there is a technique you want to learn, some wizard has implemented it on Shadertoy.
 - [Inigo Quilez](https://iquilezles.org/) is a legend in the shader community and has written _many_ fantastic tutorials. 
@@ -37,6 +38,7 @@ This tutorial series was an exploration of various shader topics, with a focus o
 	- [Dan Moran](https://www.youtube.com/playlist?list=PLJ4rOFLQFH4BUVziWikfHvL8TbNGJ6M_f) makes the _Makin' Stuff Look Good In Video Games_. This channel has videos examining effects in existing games and recreating them by hand. 
 	- [The Art Of Code](https://www.youtube.com/playlist?list=PLGmrMu-IwbguU_nY2egTFmlg691DN7uE5) has several videos writing shaders from scratch with Shadertoy. 
 	- [Acerola](https://www.youtube.com/playlist?list=PLUKV95Q13e_U5g00d5M5MOacpVMiEbW9u) has great case study videos recreating effects from existing games.
+	- [Freya Holmér](https://www.youtube.com/watch?v=MOYiVLEnhrw) has many great videos that delve into mathematics for game developers. 
 
 
 ## A Note From The Author
