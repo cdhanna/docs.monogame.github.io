@@ -101,12 +101,12 @@ float Progress;
 And recall that unless the `Progress` parameter is actually _used_ somehow in the calculation of the output of the shader, it will be optimized out of the final compilation. So, for now, lets make the shader return the `Progress` value in the red value of the color. 
 ```hlsl
 #if OPENGL  
-   #define SV_POSITION POSITION  
-   #define VS_SHADERMODEL vs_3_0  
-   #define PS_SHADERMODEL ps_3_0  
+    #define SV_POSITION POSITION  
+    #define VS_SHADERMODEL vs_3_0  
+    #define PS_SHADERMODEL ps_3_0  
 #else  
-   #define VS_SHADERMODEL vs_4_0_level_9_1  
-   #define PS_SHADERMODEL ps_4_0_level_9_1  
+    #define VS_SHADERMODEL vs_4_0_level_9_1  
+    #define PS_SHADERMODEL ps_4_0_level_9_1  
 #endif  
   
 Texture2D SpriteTexture;  
@@ -115,28 +115,28 @@ float Progress;
   
 sampler2D SpriteTextureSampler = sampler_state  
 {  
-   Texture = <SpriteTexture>;  
+    Texture = <SpriteTexture>;  
 };  
   
 struct VertexShaderOutput  
 {  
-   float4 Position : SV_POSITION;  
-   float4 Color : COLOR0;  
-   float2 TextureCoordinates : TEXCOORD0;  
+    float4 Position : SV_POSITION;  
+    float4 Color : COLOR0;  
+    float2 TextureCoordinates : TEXCOORD0;  
 };  
   
 float4 MainPS(VertexShaderOutput input) : COLOR  
 {  
-   return float4(Progress, 0, 0, 1);  
+    return float4(Progress, 0, 0, 1);  
 }  
   
   
 technique SpriteDrawing  
 {  
-   pass P0  
-   {  
-      PixelShader = compile PS_SHADERMODEL MainPS();  
-   }  
+    pass P0  
+    {  
+        PixelShader = compile PS_SHADERMODEL MainPS();  
+    }  
 };
 ```
 
@@ -401,7 +401,8 @@ public static SceneTransition Create(int durationMs, bool isForwards)
         StartTime = DateTimeOffset.Now,  
         TextureIndex = Random.Shared.Next(),  
         IsForwards = isForwards  
-    };}  
+    };
+}  
   
 public static SceneTransition Open(int durationMs) => Create(durationMs, true);  
 public static SceneTransition Close(int durationMs) => Create(durationMs, false);
@@ -469,7 +470,7 @@ In order for the _DungeonSlime_ project to load the content, we need to make a f
 In the `DungeonSlime.csproj` file, add the following changes to include files from both projects. 
 ```xml
 <ItemGroup>  
-  <MonoGameContentReference Include="**/*.mgcb;../MonoGameLibrary/**/*.mgcb" />  
+    <MonoGameContentReference Include="**/*.mgcb;../MonoGameLibrary/**/*.mgcb" />  
 </ItemGroup>
 ```
 
@@ -497,15 +498,15 @@ Finally, use the `SharedContent` instead of `Content` load load all the content,
 ```csharp
 protected override void LoadContent()
 {
-	base.LoadContent();
-	SceneTransitionMaterial = SharedContent.WatchMaterial("effects/sceneTransitionEffect");
-	SceneTransitionMaterial.SetParameter("EdgeWidth", .05f);
+    base.LoadContent();
+    SceneTransitionMaterial = SharedContent.WatchMaterial("effects/sceneTransitionEffect");
+    SceneTransitionMaterial.SetParameter("EdgeWidth", .05f);
 
-	SceneTransitionTextures = new List<Texture2D>();
-	SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/angled"));
-	SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/concave"));
-	SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/radial"));
-	SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/ripple"));
+    SceneTransitionTextures = new List<Texture2D>();
+    SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/angled"));
+    SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/concave"));
+    SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/radial"));
+    SceneTransitionTextures.Add(SharedContent.Load<Texture2D>("images/ripple"));
 }
 ```
 

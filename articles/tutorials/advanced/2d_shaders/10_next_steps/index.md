@@ -35,10 +35,10 @@ This tutorial series was an exploration of various shader topics, with a focus o
 - [Shadertoy](https://www.shadertoy.com/) is an online shader editor with a live preview in the browser. It also functions as a vibrant library of cool effects and techniques you can learn from. Often, if there is a technique you want to learn, some wizard has implemented it on Shadertoy.
 - [Inigo Quilez](https://iquilezles.org/) is a legend in the shader community and has written _many_ fantastic tutorials. 
 - There are a lot of wonderful Youtube videos that cover shaders. Here are just a few.
-	- [Dan Moran](https://www.youtube.com/playlist?list=PLJ4rOFLQFH4BUVziWikfHvL8TbNGJ6M_f) makes the _Makin' Stuff Look Good In Video Games_. This channel has videos examining effects in existing games and recreating them by hand. 
-	- [The Art Of Code](https://www.youtube.com/playlist?list=PLGmrMu-IwbguU_nY2egTFmlg691DN7uE5) has several videos writing shaders from scratch with Shadertoy. 
-	- [Acerola](https://www.youtube.com/playlist?list=PLUKV95Q13e_U5g00d5M5MOacpVMiEbW9u) has great case study videos recreating effects from existing games.
-	- [Freya Holmér](https://www.youtube.com/watch?v=MOYiVLEnhrw) has many great videos that delve into mathematics for game developers. 
+    - [Dan Moran](https://www.youtube.com/playlist?list=PLJ4rOFLQFH4BUVziWikfHvL8TbNGJ6M_f) makes the _Makin' Stuff Look Good In Video Games_. This channel has videos examining effects in existing games and recreating them by hand. 
+    - [The Art Of Code](https://www.youtube.com/playlist?list=PLGmrMu-IwbguU_nY2egTFmlg691DN7uE5) has several videos writing shaders from scratch with Shadertoy. 
+    - [Acerola](https://www.youtube.com/playlist?list=PLUKV95Q13e_U5g00d5M5MOacpVMiEbW9u) has great case study videos recreating effects from existing games.
+    - [Freya Holmér](https://www.youtube.com/watch?v=MOYiVLEnhrw) has many great videos that delve into mathematics for game developers. 
 
 
 ## A Note From The Author

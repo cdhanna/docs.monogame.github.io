@@ -82,9 +82,9 @@ Add this to your `.csproj` file.
 <Target Name="BuildAndCopyContent" DependsOnTargets="IncludeContent">  
   <Message Text="Rebuilding Content..." Importance="High"/>  
   <Copy
-	  SourceFiles="%(ExtraContent.Identity)"  
-	  DestinationFiles="$(OutDir)%(ExtraContent.ContentDir)%(ExtraContent.RecursiveDir)%(ExtraContent.Filename)%(ExtraContent.Extension)"
-	  SkipUnchangedFiles="true"  
+      SourceFiles="%(ExtraContent.Identity)"  
+      DestinationFiles="$(OutDir)%(ExtraContent.ContentDir)%(ExtraContent.RecursiveDir)%(ExtraContent.Filename)%(ExtraContent.Extension)"
+      SkipUnchangedFiles="true"  
   />  
 </Target>
 ```
@@ -277,13 +277,13 @@ The new `Watch` method should return a `WatchedAsset<T>` instead of the direct `
 ```csharp
 public static WatchedAsset<T> Watch<T>(this ContentManager manager, string assetName)
 {
-	var asset = manager.Load<T>(assetName);
-	return new WatchedAsset<T>
-	{
-		AssetName = assetName,
-		Asset = asset,
-		UpdatedAt = DateTimeOffset.Now,
-	};
+    var asset = manager.Load<T>(assetName);
+    return new WatchedAsset<T>
+    {
+        AssetName = assetName,
+        Asset = asset,
+        UpdatedAt = DateTimeOffset.Now,
+    };
 }
 ```
 
@@ -305,29 +305,29 @@ This method will take a `WatchedAsset<T>` and update the inner `Asset` property 
 ```csharp
 public static bool TryRefresh<T>(this ContentManager manager, WatchedAsset<T> watchedAsset)
 {
-	oldAsset = default;
+    oldAsset = default;
 
-	// get the same path that the ContentManager would use to load the asset
-	var path = Path.Combine(manager.RootDirectory, watchedAsset.AssetName) + ".xnb";
+    // get the same path that the ContentManager would use to load the asset
+    var path = Path.Combine(manager.RootDirectory, watchedAsset.AssetName) + ".xnb";
 
-	// ask the operating system when the file was last written.
-	var lastWriteTime = File.GetLastWriteTime(path);
+    // ask the operating system when the file was last written.
+    var lastWriteTime = File.GetLastWriteTime(path);
 
-	// when the file's write time is less recent than the asset's latest read time, 
-	//  then the asset does not need to be reloaded.
-	if (lastWriteTime <= watchedAsset.UpdatedAt)
-	{
-		return false;
-	}
+    // when the file's write time is less recent than the asset's latest read time, 
+    //  then the asset does not need to be reloaded.
+    if (lastWriteTime <= watchedAsset.UpdatedAt)
+    {
+        return false;
+    }
 
-	// clear the old asset to avoid leaking
-	manager.UnloadAsset(watchedAsset.AssetName);
+    // clear the old asset to avoid leaking
+    manager.UnloadAsset(watchedAsset.AssetName);
 
-	// load the new asset and update the latest read time
-	watchedAsset.Asset = manager.Load<T>(watchedAsset.AssetName);
-	watchedAsset.UpdatedAt = lastWriteTime;
-	
-	return true;
+    // load the new asset and update the latest read time
+    watchedAsset.Asset = manager.Load<T>(watchedAsset.AssetName);
+    watchedAsset.UpdatedAt = lastWriteTime;
+    
+    return true;
 }    
 ```
 
@@ -361,17 +361,17 @@ Add this function to the `ContentManagerExtensions` class.
 ```csharp
 private static bool IsFileLocked(string path)
 {
-	try
-	{
-		using FileStream _ = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-		// File is not locked
-		return false;
-	}
-	catch (IOException)
-	{
-		// File is locked or inaccessible
-		return true;
-	}
+    try
+    {
+        using FileStream _ = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        // File is not locked
+        return false;
+    }
+    catch (IOException)
+    {
+        // File is locked or inaccessible
+        return true;
+    }
 }
 ```
 

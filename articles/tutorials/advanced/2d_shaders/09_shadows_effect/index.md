@@ -94,6 +94,7 @@ If we use the defaults, then we could use these values to compute a unique id fo
 | D      | 1          | 0          | 1         |
 | F      | 1          | 1          | 3         |
 | G      | 0          | 1          | 2         |
+
 The unique value is important, because it gives the vertex shader the ability to know _which_ vertex is being processed, rather than _any_ arbitrary vertex. For example, now the shader can know if it is processing `S`, or `D` based on if the unique id is `0` and `1`. The math for mapping `S` --> `A` may be quite different than the math for mapping `D` --> `a`. 
 
 Additionally, the default `TexCoord` values allow the vertex shader to take any arbitrary position,  (`S`, `D`, `F`, and `G`) , and produce the point `P` where the `SpriteBatch` is drawing the sprite in world space. Recall from the previous chapter that MonoGame uses the screen size as a basis for generating world space positions, and then the default projection matrix transforms those world space positions into clip space. Given a shader parameter, `float2 ScreenSize`,  the vertex shader can convert back from the world-space positions  (`S`, `D`, `F`, and `G`)  to the `P` position by subtracting `.5 * ScreenSize * TexCoord` from the current vertex. 
@@ -111,7 +112,7 @@ Now that we have a good understanding of the available inputs, and the goal of t
 
 Every point (`S`, `D`, `F`, and `G`) needs to find `P`. To do that, the `TexCoord` can be treated as a direction from `P` to the current point, and the `ScreenSize` shader parameter can be used to find the right amount of distance to travel along that direction. 
 
-```
+```hlsl
 float2 pos = input.Position.xy;
 float2 P = pos - (.5 * input.TexCoord) / ScreenSize;
 float2 A = P;
@@ -124,7 +125,7 @@ float2 B = A + aToB;
 ```
 
 The point `a` must lay _somewhere_ on the ray cast from the `LightPosition` to the start of the line segment, `A`. Additionally, the point `a` must lay _beyond_ `A` from the light's perspective. The direction of the ray can be calculated as,
-```
+```hlsl
 float2 lightRayA = normalize(A - LightPosition);
 ```
 

@@ -88,10 +88,10 @@ public override void Update(GameTime gameTime)
     _grayscaleEffect.Update();  
     _colorSwapMaterial.Update();  
 
-	// Prevent the game from actually updating. TODO: remove this when we are done playing with shaders!
+    // Prevent the game from actually updating. TODO: remove this when we are done playing with shaders!
     return;
 
-	// ...
+    // ...
 ```
 
 
@@ -106,22 +106,22 @@ The shader code _could_ just do an `if` check for this color, and when any of th
 ```hlsl
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-	float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates) * input.Color;
-	
-	// the color values are stored between 0 and 1, 
-	//  this converts the 0 to 1 range to 0 to 255, and casts to an int.
-	int red = originalColor.r * 255;
-	int green = originalColor.g * 255;
-	int blue = originalColor.b * 255;
+    float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates) * input.Color;
+    
+    // the color values are stored between 0 and 1, 
+    //  this converts the 0 to 1 range to 0 to 255, and casts to an int.
+    int red = originalColor.r * 255;
+    int green = originalColor.g * 255;
+    int blue = originalColor.b * 255;
 
-	// check for the hard-coded blue color
-	if (red == 32 && green == 40 && blue == 78)
-	{
-		float4 hotPink = float4(.9, 0, .7, 1);
-		return hotPink;
-	}
+    // check for the hard-coded blue color
+    if (red == 32 && green == 40 && blue == 78)
+    {
+        float4 hotPink = float4(.9, 0, .7, 1);
+        return hotPink;
+    }
 
-	return originalColor;
+    return originalColor;
 }
 ```
 
@@ -149,7 +149,7 @@ As a demonstration, if we were using C# to create a table, it might look like th
 ```csharp
 var map = new Dictionary<int, Color>  
 {  
-	// picked some random colors for the values
+    // picked some random colors for the values
     [32] = Color.MonoGameOrange,  
     [115] = Color.CornflowerBlue,  
     [255] = Color.Firebrick,  
@@ -183,15 +183,15 @@ And the `colorSwapEffect.fx` shader needs to be updated to accept the color map,
 Texture2D SpriteTexture;
 sampler2D SpriteTextureSampler = sampler_state
 {
-	Texture = <SpriteTexture>;
+    Texture = <SpriteTexture>;
 };
 
 // the custom color map passed to the Material.SetParameter()
 Texture2D ColorMap;
 sampler2D ColorMapSampler = sampler_state
 {
-	Texture = <ColorMap>;
-	MinFilter = Point;
+    Texture = <ColorMap>;
+    MinFilter = Point;
     MagFilter = Point;
     MipFilter = Point;
     AddressU = Clamp;
@@ -227,17 +227,17 @@ Change the shader function to the following,
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
     // read the original color value
-	float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates);
-	
-	// produce the key location
-	//  note the x-offset by half a texel solves rounding errors.
-	float2 keyUv = float2(originalColor.r;
-	
-	// read the swap color value
-	float4 swappedColor = tex2D(ColorMapSampler, keyUv) * originalColor.a;
-	
-	// return the result color
-	return lerp(swappedColor, originalColor, OriginalAmount);
+    float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates);
+    
+    // produce the key location
+    //  note the x-offset by half a texel solves rounding errors.
+    float2 keyUv = float2(originalColor.r;
+    
+    // read the swap color value
+    float4 swappedColor = tex2D(ColorMapSampler, keyUv) * originalColor.a;
+    
+    // return the result color
+    return lerp(swappedColor, originalColor, OriginalAmount);
 }
 ```
 
@@ -357,9 +357,9 @@ The goal is to change the color of the slime independently from the rest of the 
 Change the `SpriteBatch.Begin()` call to look like this,
 ```csharp
 Core.SpriteBatch.Begin(
-	samplerState: SamplerState.PointClamp,
-	sortMode: SpriteSortMode.Immediate,
-	effect: _colorSwapMaterial.Effect);
+    samplerState: SamplerState.PointClamp,
+    sortMode: SpriteSortMode.Immediate,
+    effect: _colorSwapMaterial.Effect);
 ```
 
 And then update the draw code itself to update the shader parameter between drawing the slime and the rest of the game.
@@ -387,16 +387,16 @@ We want to swap the color of the slime between two color maps, so first, we need
 ```csharp
 public void SetColorsByExistingColorMap(Texture2D existingColorMap)
 {
-	var existingPixels = new Color[256];
-	existingColorMap.GetData(existingPixels);
+    var existingPixels = new Color[256];
+    existingColorMap.GetData(existingPixels);
 
-	var map = new Dictionary<int, Color>();
-	for (var i = 0; i < existingPixels.Length; i++)
-	{
-		map[i] = existingPixels[i];
-	}
-	
-	SetColorsByRedValue(map);
+    var map = new Dictionary<int, Color>();
+    for (var i = 0; i < existingPixels.Length; i++)
+    {
+        map[i] = existingPixels[i];
+    }
+    
+    SetColorsByRedValue(map);
 }
 ```
 
@@ -406,8 +406,8 @@ _slimeColorMap = new RedColorMap();
 _slimeColorMap.SetColorsByExistingColorMap(_colorMap);
 _slimeColorMap.SetColorsByRedValue(new Dictionary<int, Color>
 {
-	// main color
-	[32] = Color.Yellow,
+    // main color
+    [32] = Color.Yellow,
 }, false);
 ```
 
@@ -417,7 +417,7 @@ Now in the `Draw()` method, we can _optionally_ change the color map based on so
 // Update the colorMap for the slime
 if ((int)gameTime.TotalGameTime.TotalSeconds % 2 == 0)
 {
-	_colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
+    _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
 }
 
 // Draw the slime.
@@ -432,22 +432,22 @@ Ultimately, it would be nice to control the color value _per_ slime segment, not
 /// </summary>
 public void Draw(Action<int> configureSpriteBatch)
 {
-	// Iterate through each segment and draw it
-	for (var i = 0 ; i < _segments.Count; i ++)
-	{
-		var segment = _segments[i];
-		// Calculate the visual position of the segment at the moment by
-		// lerping between its "at" and "to" position by the movement
-		// offset lerp amount
-		Vector2 pos = Vector2.Lerp(segment.At, segment.To, _movementProgress);
+    // Iterate through each segment and draw it
+    for (var i = 0 ; i < _segments.Count; i ++)
+    {
+        var segment = _segments[i];
+        // Calculate the visual position of the segment at the moment by
+        // lerping between its "at" and "to" position by the movement
+        // offset lerp amount
+        Vector2 pos = Vector2.Lerp(segment.At, segment.To, _movementProgress);
 
-		// Allow the sprite batch to be configured before each call.
-		configureSpriteBatch(i);
+        // Allow the sprite batch to be configured before each call.
+        configureSpriteBatch(i);
 
-		// Draw the slime sprite at the calculated visual position of this
-		// segment
-		_sprite.Draw(Core.SpriteBatch, pos);
-	}
+        // Draw the slime sprite at the calculated visual position of this
+        // segment
+        _sprite.Draw(Core.SpriteBatch, pos);
+    }
 }
 ```
 
@@ -468,17 +468,17 @@ Now, in the `Draw()` method, modify the _slime_'s draw invocation to use the new
 // Draw the slime.
 _slime.Draw(segmentIndex =>
 {
-	const int flashTimeMs = 125;
-	var map = _colorMap;
-	var elapsedMs = (gameTime.TotalGameTime.TotalMilliseconds - _lastGrowTime.TotalMilliseconds);
-	var intervalsAgo = (int)(elapsedMs / flashTimeMs);
+    const int flashTimeMs = 125;
+    var map = _colorMap;
+    var elapsedMs = (gameTime.TotalGameTime.TotalMilliseconds - _lastGrowTime.TotalMilliseconds);
+    var intervalsAgo = (int)(elapsedMs / flashTimeMs);
 
-	if (intervalsAgo < _slime.Size && (intervalsAgo - segmentIndex) % _slime.Size == 0)
-	{
-		map = _slimeColorMap.ColorMap;
-	}
-	
-	_colorSwapMaterial.SetParameter("ColorMap", map);
+    if (intervalsAgo < _slime.Size && (intervalsAgo - segmentIndex) % _slime.Size == 0)
+    {
+        map = _slimeColorMap.ColorMap;
+    }
+    
+    _colorSwapMaterial.SetParameter("ColorMap", map);
 });
 ```
 
@@ -517,22 +517,22 @@ For readability, extract the logic of the color swap effect into a new function 
 ```hlsl
 float4 SwapColors(float4 color)
 {
-	// produce the key location
-	//  note the x-offset by half a texel solves rounding errors.
-	float2 keyUv = float2(color.r , 0);
-	
-	// read the swap color value
-	float4 swappedColor = tex2D(ColorMapSampler, keyUv) * color.a;
-	
-	// ignore the swap if the map does not have a value
-	bool hasSwapColor = swappedColor.a > 0;
-	if (!hasSwapColor)
-	{
-	    return color;
-	}
-	
-	// return the result color
-	return lerp(swappedColor, color, OriginalAmount);
+    // produce the key location
+    //  note the x-offset by half a texel solves rounding errors.
+    float2 keyUv = float2(color.r , 0);
+    
+    // read the swap color value
+    float4 swappedColor = tex2D(ColorMapSampler, keyUv) * color.a;
+    
+    // ignore the swap if the map does not have a value
+    bool hasSwapColor = swappedColor.a > 0;
+    if (!hasSwapColor)
+    {
+        return color;
+    }
+    
+    // return the result color
+    return lerp(swappedColor, color, OriginalAmount);
 }
 ```
 
@@ -541,7 +541,7 @@ And now the main shader function can chain these methods together.
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
     // read the original color value
-	float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates);
+    float4 originalColor = tex2D(SpriteTextureSampler,input.TextureCoordinates);
 
     float4 swapped = SwapColors(originalColor);
     float4 saturated = Grayscale(swapped);
@@ -564,28 +564,28 @@ In the `Draw()` method, instead of having an `if` case to start the `SpriteBatch
 ```csharp
 _colorSwapMaterial.SetParameter("Saturation", _saturation);
 Core.SpriteBatch.Begin(
-	samplerState: SamplerState.PointClamp,
-	sortMode: SpriteSortMode.Immediate,
-	effect: _colorSwapMaterial.Effect);
+    samplerState: SamplerState.PointClamp,
+    sortMode: SpriteSortMode.Immediate,
+    effect: _colorSwapMaterial.Effect);
 ```
 
 In the `Update()` method, we just need to set the `_saturation` back to `1` if the game is being played.
 ```csharp
 if (_state != GameState.Playing)
 {
-	// The game is in either a paused or game over state, so
-	// gradually decrease the saturation to create the fading grayscale.
-	_saturation = Math.Max(0.0f, _saturation - FADE_SPEED);
+    // The game is in either a paused or game over state, so
+    // gradually decrease the saturation to create the fading grayscale.
+    _saturation = Math.Max(0.0f, _saturation - FADE_SPEED);
 
-	// If its just a game over state, return back
-	if (_state == GameState.GameOver)
-	{
-		return;
-	}
+    // If its just a game over state, return back
+    if (_state == GameState.GameOver)
+    {
+        return;
+    }
 }
 else
 {
-	_saturation = 1;
+    _saturation = 1;
 }
 ```
 ![Figure 6.19: The grayscale effect has been restored](./gifs/grayscale.gif)

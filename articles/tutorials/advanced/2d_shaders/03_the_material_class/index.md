@@ -166,14 +166,14 @@ Now you can create a helper method that sets a parameter value for the `Material
 ```csharp
 public void SetParameter(string name, float value)
 {
-	if (TryGetParameter(name, out var parameter))
-	{
-		parameter.SetValue(value);
-	}
-	else
-	{
-		Console.WriteLine($"Warning: cannot set parameter=[{name}] as it does not exist in the shader=[{Asset.AssetName}]");
-	}
+    if (TryGetParameter(name, out var parameter))
+    {
+        parameter.SetValue(value);
+    }
+    else
+    {
+        Console.WriteLine($"Warning: cannot set parameter=[{name}] as it does not exist in the shader=[{Asset.AssetName}]");
+    }
 }
 ```
 
@@ -209,31 +209,31 @@ Add the following method to the `Material` class,
 ```csharp
 public void Update()
 {
-	if (Asset.TryRefresh(out var oldAsset))
-	{
-		UpdateParameterCache();
-		
-		foreach (var oldParam in oldAsset.Parameters)
-		{
-			if (!TryGetParameter(oldParam.Name, out var newParam))
-			{
-				continue;
-			}
-			
-			switch (oldParam.ParameterClass)
-			{
-				case EffectParameterClass.Scalar:
-					newParam.SetValue(oldParam.GetValueSingle());
-					break;
-				default:
-					Console.WriteLine("Warning: shader reload system was not able to re-apply property. " +
-									  $"shader=[{Effect.Name}] " +
-									  $"property=[{oldParam.Name}] " +
-									  $"class=[{oldParam.ParameterClass}]");
-					break;
-			}
-		}
-	}
+    if (Asset.TryRefresh(out var oldAsset))
+    {
+        UpdateParameterCache();
+        
+        foreach (var oldParam in oldAsset.Parameters)
+        {
+            if (!TryGetParameter(oldParam.Name, out var newParam))
+            {
+                continue;
+            }
+            
+            switch (oldParam.ParameterClass)
+            {
+                case EffectParameterClass.Scalar:
+                    newParam.SetValue(oldParam.GetValueSingle());
+                    break;
+                default:
+                    Console.WriteLine("Warning: shader reload system was not able to re-apply property. " +
+                                      $"shader=[{Effect.Name}] " +
+                                      $"property=[{oldParam.Name}] " +
+                                      $"class=[{oldParam.ParameterClass}]");
+                    break;
+            }
+        }
+    }
 }
 ```
 
@@ -272,38 +272,38 @@ Add the following methods to the `Material` class.
 ```csharp
 public void SetParameter(string name, Matrix value)
 {
-	if (TryGetParameter(name, out var parameter))
-	{
-		parameter.SetValue(value);
-	}
-	else
-	{
-		Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
-	}
+    if (TryGetParameter(name, out var parameter))
+    {
+        parameter.SetValue(value);
+    }
+    else
+    {
+        Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
+    }
 }
 
 public void SetParameter(string name, Vector2 value)
 {
-	if (TryGetParameter(name, out var parameter))
-	{
-		parameter.SetValue(value);
-	}
-	else
-	{
-		Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
-	}
+    if (TryGetParameter(name, out var parameter))
+    {
+        parameter.SetValue(value);
+    }
+    else
+    {
+        Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
+    }
 }
 
 public void SetParameter(string name, Texture2D value)
 {
-	if (TryGetParameter(name, out var parameter))
-	{
-		parameter.SetValue(value);
-	}
-	else
-	{
-		Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
-	}
+    if (TryGetParameter(name, out var parameter))
+    {
+        parameter.SetValue(value);
+    }
+    else
+    {
+        Console.WriteLine($"Warning: cannot set shader parameter=[{name}] because it does not exist in the compiled shader=[{Asset.AssetName}]");
+    }
 }
 ```
 
